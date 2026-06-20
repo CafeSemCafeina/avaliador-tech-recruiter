@@ -1,7 +1,7 @@
 # Spec 001: Data contracts & report schema (the seam)
 
 - **Tier:** 0
-- **Status:** Draft
+- **Status:** In progress (Go contracts + L0 tests done; TS round-trip vitest lands with the frontend scaffold)
 - **Related to:** PRD §14; TECHNICAL_DESIGN §5, §6; ADR-0002; ADR-0013; EVALUATION L0
 - **Estimate:** M
 - **Owner engine:** orchestrator (this is the seam the whole system depends on)
