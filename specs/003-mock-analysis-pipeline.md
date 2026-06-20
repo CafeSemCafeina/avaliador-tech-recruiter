@@ -1,7 +1,7 @@
 # Spec 003: Mock analysis pipeline & stage events
 
 - **Tier:** 1
-- **Status:** Draft
+- **Status:** Implemented
 - **Related to:** PRD §8 (step 3), §11; TECHNICAL_DESIGN §2, §7; ADR-0003; ADR-0011; EVALUATION L2
 - **Estimate:** M
 - **Owner engine:** orchestrator (defines the pipeline interface other tiers extend)
