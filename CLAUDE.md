@@ -4,12 +4,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository state
 
-This repo is **pre-implementation**: it currently contains only product/architecture docs and an exported design system. There is no `package.json`, `go.mod`, build, or test runner yet. The documents under `docs/` are not background reading — they are the binding specification the code must implement. Read them before writing code; treat conflicts between code and docs as bugs in the code.
+The **Tier 1 mock-mode floor is implemented** (specs 001–005): a Go backend (`backend/`) and a React + TypeScript + Vite SPA (`frontend/`), wired end to end with the deterministic mock pipeline. Real LLM/GitHub/PDF/cloud fidelity (Tier 2+) is not built yet. The documents under `docs/` remain the binding specification; treat conflicts between code and docs as bugs in the code.
 
-When you scaffold the implementation, follow the stack and structure fixed by the docs (do not re-decide them):
-- **Backend:** Go + `chi`, in-memory store, SSE for progress, JSON-first contracts ([docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md) §3).
+The stack and structure are fixed by the docs (do not re-decide them):
+- **Backend:** Go + `chi`, in-memory store, SSE for progress, JSON-first contracts ([docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md) §3). Package layout: `internal/contract` (the frozen seam), `internal/api`, `internal/store`, `internal/pipeline`, `internal/eval`, `internal/export`, `cmd/server`.
 - **Frontend:** single-page React + TypeScript + Vite, `useReducer` for state, no React Router in the first MVP ([docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md) §12).
-- The planned dev commands (Go fmt/vet/test/build; frontend lint/typecheck/test/build; Docker build) are defined in [docs/PRD.md](docs/PRD.md) §18 and [docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md) §16. Wire these into CI as they are built; this section should be updated with the real invocations (including how to run a single test) once the toolchain exists.
+
+### Commands
+
+Backend (run in `backend/`):
+- `go test ./...` — full suite (L0 contract, L1 policy, L2 mock fixtures).
+- Single test: `go test ./internal/eval -run TestForbiddenVocabularyRejected`.
+- `go vet ./...`; format check `gofmt -l .` (must be empty); `go run ./cmd/server` (honours `PORT`, `ANALYSIS_MODE`).
+- Regenerate the export golden after an intentional change: `UPDATE_GOLDEN=1 go test ./internal/export`.
+
+Frontend (run in `frontend/`):
+- `npm ci` (first time) · `npm run typecheck` · `npm test` (vitest) · `npm run build` · `npm run dev`.
+- Single test: `npm test -- src/policy.test.ts`.
+- The dev server calls the backend at `VITE_API_BASE_URL` (default `http://localhost:8080`).
+
+CI runs all of these on push/PR ([.github/workflows/ci.yml](.github/workflows/ci.yml)). Live model/GitHub/cloud calls never run in the default suite. Docker/deploy (Tier 4) is not wired yet.
 
 ## Product constraints (non-negotiable — enforced, not just guidance)
 
