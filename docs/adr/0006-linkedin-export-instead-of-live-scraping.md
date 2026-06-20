@@ -20,17 +20,15 @@ The UI should clearly state:
 - private data is not accessed;
 - the system analyzes only user-provided content.
 
-An Apify connector may be considered later as an optional integration, but it is not required for the MVP.
-
 ## Alternatives considered
 
 ### Scrape LinkedIn directly
 
 Rejected. It is risky, unstable, and unnecessary for the first demo.
 
-### Use Apify as the default path
+### Use a third-party scraping connector as the default path
 
-Rejected for MVP. Useful later, but actors vary in quality, price, limits, and reliability.
+Rejected for MVP. Hosted scraping actors vary in quality, price, limits, and reliability, and they reintroduce the privacy concerns that user-provided export avoids.
 
 ### Manual PDF/text input
 

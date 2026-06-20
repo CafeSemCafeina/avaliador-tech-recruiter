@@ -7,32 +7,28 @@ Date: 2026-06-20
 
 The frontend must be usable and polished enough for a recruiter-facing demo, but the MVP timeline is short. The project also aims to demonstrate an AI-native product workflow, not only AI-assisted code generation.
 
-Instead of hand-designing the UI from scratch or committing early to a component library, the team will use Claude Design to generate the initial visual screens as HTML and CSS.
+Instead of hand-designing the UI from scratch or committing early to a generic component library, the team will use Claude Design to generate the initial visual language and screens.
 
 ## Decision
 
 Use Claude Design as the first source for the frontend visual design.
 
-The expected flow is:
+Claude Design delivered a self-contained design system (not raw per-screen HTML): design tokens, brand assets, component primitives, foundation guidelines, and a four-screen UI kit. The expected flow is:
 
-1. Generate separate screens in Claude Design.
-2. Save the raw HTML/CSS output in the repository.
-3. Convert the screens into React + TypeScript components.
-4. Reuse or adapt the generated CSS as needed.
+1. Generate the design system and the four screens in Claude Design.
+2. Export and version the design system in the repository.
+3. Convert the UI-kit screens into React + TypeScript components against the design tokens.
+4. Reuse the tokens and component contracts rather than ad-hoc CSS.
 5. Connect the components to the Go API contracts.
 
-The planned screen outputs are:
+The four screens are:
 
 - job input screen;
 - candidate input screen;
 - analysis progress screen;
 - report screen.
 
-Raw design artifacts should be versioned under:
-
-```text
-design/claude-design/raw/
-```
+Design artifacts are versioned under `design/` (entry: `design/styles.css`; tokens in `design/tokens/`; the canonical screens in `design/ui_kits/analyzer/`; design rules in `design/readme.md` and `design/SKILL.md`).
 
 Converted application components should live under the frontend application once it is scaffolded.
 

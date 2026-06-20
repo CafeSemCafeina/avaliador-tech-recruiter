@@ -66,7 +66,6 @@ The tool avoids cold percentages or ranking. Missing public evidence is treated 
 - Persisted reports.
 - Analyst chat over the generated report.
 - Stronger GitHub static analyzer.
-- Optional Apify-based LinkedIn connector.
 - AWS S3 for uploads/exports.
 - More complete CI/CD to ECR/ECS.
 - Repo-specific AI coding skills and internal agent rubrics.

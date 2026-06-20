@@ -303,24 +303,34 @@ No React Router in the first MVP.
 
 ### UI source
 
-The first visual design comes from Claude Design as separate HTML/CSS screens.
-
-Raw outputs are versioned under:
+The first visual design comes from Claude Design, delivered as a self-contained design system (not raw per-screen HTML). It is versioned under:
 
 ```text
-design/claude-design/raw/
+design/
 ```
 
-Expected raw files:
+Key contents:
 
 ```text
-job-input.html
-candidate-input.html
-analysis-progress.html
-report.html
+design/styles.css              global token entry (@imports tokens/*)
+design/tokens/                 colors, typography, spacing, fonts, base
+design/assets/                 brand logo SVGs
+design/components/             core, forms, feedback, recruiting primitives (.jsx + .d.ts + .prompt.md)
+design/guidelines/             foundation specimen cards
+design/ui_kits/analyzer/       the canonical four-screen flow (JSX) + index.html
+design/readme.md, SKILL.md     design-system rules and skill entry point
 ```
 
-The generated screens are converted into typed React components.
+The canonical reference for layout, density, and copy is `design/ui_kits/analyzer/`, which composes the design-system primitives into the four screens:
+
+```text
+JobInputScreen.jsx
+CandidateEvidenceScreen.jsx
+AnalysisProgressScreen.jsx
+ReportScreen.jsx
+```
+
+These screens are converted into typed React components against the design-system tokens. New work must design with the CSS custom properties in `design/tokens/`, never raw hex.
 
 ### Main UI states
 
@@ -433,6 +443,5 @@ These are implementation details to settle during build:
 - ADK accepted or rejected after spike;
 - exact Docling invocation strategy;
 - source file selection heuristics for GitHub code sampling;
-- final Claude Design output shape;
 - AWS ECS Express Mode availability in the account.
 

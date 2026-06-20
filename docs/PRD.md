@@ -1,182 +1,182 @@
 # PRD - Avaliador Tech Recruiter
 
-Produto: Avaliador Tech Recruiter  
-Repositorio: https://github.com/CafeSemCafeina/avaliador-tech-recruiter  
-Data de inicio planejada: ____ / ____ / ______  
-Prazo-alvo: 1 semana  
-Data real de finalizacao: ____ / ____ / ______  
-Status: Planejado
+Product: Avaliador Tech Recruiter  
+Repository: https://github.com/CafeSemCafeina/avaliador-tech-recruiter  
+Planned start date: ____ / ____ / ______  
+Target deadline: 1 week  
+Actual completion date: ____ / ____ / ______  
+Status: Planned
 
-## 1. Contexto
+## 1. Context
 
-Este projeto e uma demonstracao pratica de desenvolvimento full-stack AI-native aplicada a recrutamento tecnico.
+This project is a practical demonstration of AI-native full-stack development applied to technical recruiting.
 
-A proposta e construir um MVP pequeno, hospedado, testavel e bem documentado que mostre como transformamos um problema ambiguo de hiring em um produto funcional: analisar maturidade tecnica de candidatos a partir de vaga, curriculo, GitHub, LinkedIn exportado e portfolio, organizando evidencias e perguntas de entrevista.
+The goal is to build a small, hosted, testable, and well-documented MVP that shows how an ambiguous hiring problem is turned into a working product: analyzing a candidate's technical maturity from the job posting, resume, GitHub, exported LinkedIn, and portfolio, organizing evidence and interview questions.
 
-O projeto tambem serve como prova de processo: pesquisa, definicao de escopo, arquitetura, implementacao, testes, CI, deploy cloud, documentacao e uso criterioso de agentes de IA.
+The project also serves as proof of process: research, scope definition, architecture, implementation, testing, CI, cloud deployment, documentation, and judicious use of AI agents.
 
-## 2. Meta do desafio
+## 2. Challenge goal
 
-Meta principal: construir, em ate 1 semana, um produto demonstravel que evidencie capacidade real de entregar software com Go, TypeScript, React, IA, containers e cloud.
+Primary goal: build, in up to 1 week, a demonstrable product that shows real capability to deliver software with Go, TypeScript, React, AI, containers, and cloud.
 
-O projeto deve demonstrar:
+The project should demonstrate:
 
-- capacidade de transformar contexto de negocio em produto;
-- Go backend real;
+- the ability to turn business context into a product;
+- a real Go backend;
 - React + TypeScript + Vite;
-- agentic workflow com framework Go-native;
-- analise estatica de GitHub;
-- parsing de documentos com solucao open source;
-- deploy em AWS Amplify e ECS Express Mode;
-- containerizacao;
-- testes minimos;
-- CI com GitHub Actions;
-- documentacao de workflow AI-native;
-- conforto com Linux, tmux e SSH;
-- criterio de produto alinhado a recrutamento humano, sem score frio.
+- an agentic workflow with a Go-native framework;
+- static GitHub analysis;
+- document parsing with an open-source solution;
+- deployment to AWS Amplify and ECS Express Mode;
+- containerization;
+- minimal tests;
+- CI with GitHub Actions;
+- AI-native workflow documentation;
+- comfort with Linux, tmux, and SSH;
+- product judgment aligned with human recruiting, without a cold score.
 
-Se o MVP for planejado para 1 semana e finalizado em 2-3 dias, registrar a data real de finalizacao acima como evidencia de velocidade de execucao.
+If the MVP is planned for 1 week and finished in 2-3 days, record the actual completion date above as evidence of execution speed.
 
-## 3. Problema
+## 3. Problem
 
-Recrutadores tecnicos precisam avaliar candidatos rapidamente, mas as evidencias ficam fragmentadas:
+Technical recruiters need to evaluate candidates quickly, but the evidence is fragmented:
 
-- curriculo contem claims;
-- LinkedIn contem autorrelato publico;
-- GitHub contem evidencias de codigo, mas exige leitura tecnica;
-- portfolio pode conter projetos e cases, mas tambem marketing;
-- senioridade esperada muda conforme a vaga;
-- ausencia de evidencia publica nao significa ausencia de habilidade.
+- resumes contain claims;
+- LinkedIn contains public self-reporting;
+- GitHub contains code evidence, but requires technical reading;
+- portfolios may contain projects and case studies, but also marketing;
+- expected seniority changes with the role;
+- absence of public evidence does not mean absence of skill.
 
-Ferramentas de triagem baseadas apenas em score podem ser rapidas, mas reduzem nuance e podem criar vereditos falsos. A proposta aqui e diferente: organizar evidencias e incertezas para orientar uma entrevista humana melhor.
+Score-only screening tools can be fast, but they reduce nuance and may create false verdicts. The proposal here is different: organize evidence and uncertainty to guide a better human interview.
 
-## 4. Usuarios-alvo
+## 4. Target users
 
-### Usuario primario
+### Primary user
 
-Recruiter ou talent partner que precisa conduzir screening tecnico inicial de candidatos.
+A recruiter or talent partner who needs to run an initial technical screening of candidates.
 
-Necessidades:
+Needs:
 
-- entender rapidamente se o candidato parece junior, pleno ou senior para uma vaga;
-- saber quais claims estao evidenciados;
-- saber quais pontos precisam ser validados;
-- receber perguntas tecnicas estruturadas;
-- ter um resumo claro para hiring manager.
+- quickly understand whether the candidate appears junior, mid, or senior for a role;
+- know which claims are evidenced;
+- know which points need validation;
+- receive structured technical questions;
+- have a clear summary for the hiring manager.
 
-### Usuario secundario
+### Secondary user
 
-Hiring manager tecnico que recebe candidatos filtrados.
+A technical hiring manager who receives filtered candidates.
 
-Necessidades:
+Needs:
 
-- entender os trade-offs do candidato;
-- ver evidencias concretas;
-- identificar riscos tecnicos;
-- preparar entrevista sem ler todos os repositorios.
+- understand the candidate's trade-offs;
+- see concrete evidence;
+- identify technical risks;
+- prepare the interview without reading every repository.
 
-## 5. Proposta de solucao
+## 5. Proposed solution
 
-O Avaliador Tech Recruiter recebe uma vaga e um conjunto de evidencias do candidato. Em seguida, roda um pipeline agentico controlado que:
+The Avaliador Tech Recruiter receives a job posting and a set of candidate evidence. It then runs a controlled agentic pipeline that:
 
-1. interpreta o perfil tecnico ideal da vaga;
-2. extrai claims do curriculo;
-3. extrai sinais do LinkedIn exportado;
-4. analisa repositorios publicos do GitHub de forma estatica;
-5. extrai sinais do portfolio;
-6. cruza claims e evidencias;
-7. classifica findings em uma matriz de 4 quadrantes;
-8. gera perguntas STAR;
-9. cria um relatorio final para recruiter e hiring manager.
+1. interprets the ideal technical profile for the role;
+2. extracts claims from the resume;
+3. extracts signals from the exported LinkedIn;
+4. statically analyzes public GitHub repositories;
+5. extracts signals from the portfolio;
+6. cross-references claims and evidence;
+7. classifies findings into a four-quadrant matrix;
+8. generates STAR questions;
+9. produces a final report for the recruiter and hiring manager.
 
-O produto nao toma decisao de contratacao, nao ranqueia candidatos e nao gera score final.
+The product does not make a hiring decision, does not rank candidates, and does not generate a final score.
 
-## 6. Principios de produto
+## 6. Product principles
 
-- Evidencia antes de opiniao.
-- Sem score final.
-- Sem veredito automatico.
-- Ausencia de evidencia publica vira pergunta, nao acusacao.
-- Cada conclusao importante deve citar fonte.
-- Linguagem conservadora e profissional.
-- Recruiter continua no controle.
-- O sistema deve acelerar investigacao, nao substituir julgamento.
+- Evidence before opinion.
+- No final score.
+- No automatic verdict.
+- Absence of public evidence becomes a question, not an accusation.
+- Every important conclusion must cite a source.
+- Conservative and professional language.
+- The recruiter stays in control.
+- The system should accelerate investigation, not replace judgment.
 
-## 7. Escopo do MVP de 1 semana
+## 7. One-week MVP scope
 
-### Incluido
+### Included
 
-- Wizard de vaga.
-- Wizard de candidato.
-- Upload ou paste de curriculo.
-- Upload ou paste de LinkedIn exportado/PDF.
-- Campo GitHub URL.
-- Campo portfolio URL opcional.
-- Analise estatica de repositorios GitHub publicos nao vazios.
-- Parsing de PDF via ferramenta open source.
-- Pipeline de agents com etapas visiveis.
-- Relatorio final sem score.
-- Matriz de 4 quadrantes.
-- Badges qualitativos.
-- Perguntas STAR.
-- Export Markdown.
-- README tecnico.
-- PRD no repositorio.
-- Testes minimos.
-- CI basico.
-- Deploy frontend em AWS Amplify.
-- Deploy backend container em AWS ECS Express Mode, ou fallback documentado se houver bloqueio.
+- Job wizard.
+- Candidate wizard.
+- Upload or paste of the resume.
+- Upload or paste of the exported LinkedIn/PDF.
+- GitHub URL field.
+- Optional portfolio URL field.
+- Static analysis of public, non-empty GitHub repositories.
+- PDF parsing via an open-source tool.
+- Agent pipeline with visible stages.
+- Final report without a score.
+- Four-quadrant matrix.
+- Qualitative badges.
+- STAR questions.
+- Markdown export.
+- Technical README.
+- PRD in the repository.
+- Minimal tests.
+- Basic CI.
+- Frontend deployment on AWS Amplify.
+- Backend container deployment on AWS ECS Express Mode, or a documented fallback if blocked.
 
-### Excluido do MVP
+### Excluded from the MVP
 
-- Login/autenticacao.
-- Multiusuario.
-- Banco de dados robusto.
-- Scraping com cookie do LinkedIn.
-- Execucao de codigo dos repositorios do candidato.
-- Integracao real com ATS externo.
-- Score final.
-- Ranking entre candidatos.
-- Decisao automatica de contratar/rejeitar.
-- Terraform completo.
+- Login/authentication.
+- Multi-user.
+- Robust database.
+- Cookie-based LinkedIn scraping.
+- Execution of the candidate's repository code.
+- Real integration with an external ATS.
+- Final score.
+- Ranking between candidates.
+- Automatic hire/reject decision.
+- Full Terraform.
 - Kubernetes.
 
-## 8. Fluxo de usuario
+## 8. User flow
 
-### Etapa 1 - Vaga
+### Step 1 - Job
 
-Campos:
+Fields:
 
-- descricao da vaga;
-- senioridade minima: Intern, Junior, Mid, Senior, Staff;
-- anos de experiencia opcional;
-- tags de stack tecnologica;
-- selecao de ate 3 stacks principais;
-- notas opcionais do recruiter.
+- job description;
+- minimum seniority: Intern, Junior, Mid, Senior, Staff;
+- optional years of experience;
+- technology stack tags;
+- selection of up to 3 primary stacks;
+- optional recruiter notes.
 
-Resultado:
+Result:
 
-- perfil tecnico ideal da vaga;
-- expectativas de projeto por senioridade;
-- requisitos tecnicos obrigatorios e desejaveis.
+- ideal technical profile for the role;
+- project expectations by seniority;
+- required and desirable technical requirements.
 
-### Etapa 2 - Candidato
+### Step 2 - Candidate
 
-Campos:
+Fields:
 
-- curriculo PDF ou texto;
-- LinkedIn PDF/texto exportado;
+- resume PDF or text;
+- exported LinkedIn PDF/text;
 - GitHub URL;
-- portfolio URL opcional;
-- notas opcionais.
+- optional portfolio URL;
+- optional notes.
 
-Observacao de UX:
+UX note:
 
-O LinkedIn deve ser tratado por upload/paste. A UI deve explicar que o sistema nao faz login, nao usa cookies e nao acessa dados privados.
+LinkedIn must be handled via upload/paste. The UI must explain that the system does not log in, does not use cookies, and does not access private data.
 
-### Etapa 3 - Analise
+### Step 3 - Analysis
 
-Tela de loading/progresso com etapas:
+Loading/progress screen with stages:
 
 1. Parsing resume.
 2. Extracting role maturity profile.
@@ -189,145 +189,145 @@ Tela de loading/progresso com etapas:
 9. Running analyst self-review.
 10. Finalizing report.
 
-### Etapa 4 - Resultado
+### Step 4 - Result
 
-Blocos:
+Blocks:
 
-- resumo executivo;
-- badges qualitativos;
-- matriz de evidencias;
-- claims confirmados;
-- claims que precisam validacao;
-- lacunas tecnicas;
-- perguntas STAR;
-- resumo para recruiter;
-- resumo para hiring manager;
-- export Markdown.
+- executive summary;
+- qualitative badges;
+- evidence matrix;
+- confirmed claims;
+- claims that need validation;
+- technical gaps;
+- STAR questions;
+- recruiter summary;
+- hiring manager summary;
+- Markdown export.
 
-## 9. Modelo da matriz
+## 9. Matrix model
 
-### Forte com evidencias
+### Strong with evidence
 
-O candidato declara ou demonstra uma competencia e ha evidencias consistentes em curriculo, GitHub, LinkedIn ou portfolio.
+The candidate declares or demonstrates a competency and there is consistent evidence in the resume, GitHub, LinkedIn, or portfolio.
 
-### Forte, mas precisa avaliar
+### Strong, but needs validation
 
-O candidato aparenta ter uma competencia relevante, mas a evidencia e indireta, superficial ou insuficiente.
+The candidate appears to have a relevant competency, but the evidence is indirect, superficial, or insufficient.
 
-### Fraco com evidencias
+### Weak with evidence
 
-Ha sinais concretos de lacuna em relacao a vaga.
+There are concrete signals of a gap relative to the role.
 
-### Fraco, mas precisa avaliar
+### Weak, but needs validation
 
-Ha sinal de possivel fraqueza, mas nao ha evidencia suficiente para concluir.
+There is a signal of a possible weakness, but not enough evidence to conclude.
 
-## 10. Badges qualitativos
+## 10. Qualitative badges
 
-Exemplos:
+Examples:
 
-- Seniority Signal: Pleno plausivel, precisa validar backend ownership.
-- Stack Evidence: Forte em React/TypeScript, fraco em Go publico.
-- Project Depth: Moderada.
-- Backend Evidence: Precisa avaliacao.
-- Public Proof: Misto.
-- Interview Priority: Alta em backend/deploy.
+- Seniority Signal: Mid plausible, needs to validate backend ownership.
+- Stack Evidence: Strong in React/TypeScript, weak in public Go.
+- Project Depth: Moderate.
+- Backend Evidence: Needs assessment.
+- Public Proof: Mixed.
+- Interview Priority: High in backend/deploy.
 
-Badges nao devem virar score numerico.
+Badges must not become a numeric score.
 
 ## 11. Agent pipeline
 
 ### 11.1 JobProfileAgent
 
-Responsabilidade:
+Responsibility:
 
-- interpretar vaga;
-- mapear senioridade esperada;
-- definir perfil tecnico ideal;
-- indicar que tipo de evidencia seria esperada.
+- interpret the job posting;
+- map the expected seniority;
+- define the ideal technical profile;
+- indicate what kind of evidence would be expected.
 
 Output:
 
-- requisitos obrigatorios;
-- requisitos desejaveis;
-- expectativa por senioridade;
-- riscos tecnicos a validar.
+- required requirements;
+- desirable requirements;
+- expectation by seniority;
+- technical risks to validate.
 
 ### 11.2 ResumeEvidenceAgent
 
-Responsabilidade:
+Responsibility:
 
-- extrair claims tecnicos do curriculo;
-- separar skills, experiencias, projetos, educacao, ferramentas e impacto;
-- marcar claims como explicitos, vagos ou contextuais.
+- extract technical claims from the resume;
+- separate skills, experiences, projects, education, tools, and impact;
+- mark claims as explicit, vague, or contextual.
 
 ### 11.3 LinkedInEvidenceAgent
 
-Responsabilidade:
+Responsibility:
 
-- extrair experiencias, certificacoes, educacao, skills e atividades do LinkedIn exportado;
-- comparar sinais com o curriculo;
-- tratar LinkedIn como autorrelato publico, nao como verdade absoluta.
+- extract experiences, certifications, education, skills, and activity from the exported LinkedIn;
+- compare signals with the resume;
+- treat LinkedIn as public self-reporting, not absolute truth.
 
 ### 11.4 GitHubEvidenceAgent
 
-Responsabilidade:
+Responsibility:
 
-- analisar repositorios publicos nao vazios;
-- detectar linguagens, frameworks, READMEs, estrutura, testes, Dockerfile, CI e sinais de deploy;
-- diferenciar projeto original, fork, tutorial ou repositorio pouco conclusivo;
-- nao executar codigo.
+- analyze public, non-empty repositories;
+- detect languages, frameworks, READMEs, structure, tests, Dockerfile, CI, and deploy signals;
+- distinguish an original project, fork, tutorial, or inconclusive repository;
+- not execute code.
 
 ### 11.5 PortfolioEvidenceAgent
 
-Responsabilidade:
+Responsibility:
 
-- extrair texto e links de portfolio;
-- identificar projetos, stacks declaradas, deploys e cases;
-- cruzar sinais com GitHub e curriculo.
+- extract text and links from the portfolio;
+- identify projects, declared stacks, deploys, and case studies;
+- cross-reference signals with GitHub and the resume.
 
 ### 11.6 EvidenceCheckerAgent
 
-Responsabilidade:
+Responsibility:
 
-- cruzar requisitos da vaga com evidencias do candidato;
-- classificar claims como confirmados, plausiveis, nao verificados, fracos ou conflitantes;
-- evitar acusacoes de exagero sem base.
+- cross-reference the role requirements with the candidate's evidence;
+- classify claims as confirmed, plausible, unverified, weak, or conflicting;
+- avoid accusations of exaggeration without basis.
 
 ### 11.7 QuadrantClassifierAgent
 
-Responsabilidade:
+Responsibility:
 
-- transformar findings na matriz de 4 quadrantes;
-- manter fonte, racional e pergunta de validacao para cada item.
+- turn findings into the four-quadrant matrix;
+- keep a source, rationale, and validation question for each item.
 
 ### 11.8 STARQuestionAgent
 
-Responsabilidade:
+Responsibility:
 
-- gerar perguntas STAR tecnicas;
-- incluir follow-ups;
-- indicar o que uma boa resposta deveria revelar;
-- evitar linguagem acusatoria.
+- generate technical STAR questions;
+- include follow-ups;
+- indicate what a good answer should reveal;
+- avoid accusatory language.
 
 ### 11.9 TechnicalMaturityAnalystAgent
 
-Responsabilidade:
+Responsibility:
 
-- realizar julgamento final de maturidade tecnica sem score;
-- revisar consistencia;
-- apontar caveats;
-- escrever relatorio final.
+- make the final technical maturity judgment without a score;
+- review consistency;
+- point out caveats;
+- write the final report.
 
-Auto-check obrigatorio:
+Mandatory self-check:
 
-- estou confundindo ausencia de evidencia com ausencia de habilidade?
-- cada conclusao tem fonte?
-- estou usando score disfarçado?
-- cada fraqueza virou pergunta investigavel?
-- a senioridade foi considerada corretamente?
+- am I confusing absence of evidence with absence of skill?
+- does each conclusion have a source?
+- am I using a disguised score?
+- has each weakness become an investigable question?
+- was seniority considered correctly?
 
-## 12. Arquitetura tecnica
+## 12. Technical architecture
 
 ```text
 AWS Amplify
@@ -352,48 +352,50 @@ AI provider
 - React;
 - TypeScript;
 - Vite;
-- wizard de entrada;
-- tela de progresso;
-- tela de resultado;
-- export Markdown.
+- input wizard;
+- progress screen;
+- result screen;
+- Markdown export.
 
 ### Backend
 
 - Go HTTP API;
-- endpoints para iniciar analise, consultar status e buscar relatorio;
-- pipeline agentico controlado;
-- parsing de documentos;
+- endpoints to start an analysis, query status, and fetch the report;
+- controlled agentic pipeline;
+- document parsing;
 - GitHub static analysis;
-- logs estruturados.
+- structured logs.
 
 ### Cloud
 
-- Amplify para frontend;
-- ECR para imagem Docker;
-- ECS Express Mode para backend container;
-- CloudWatch para logs;
-- S3 opcional para uploads/exports.
+- Amplify for the frontend;
+- ECR for the Docker image;
+- ECS Express Mode for the backend container;
+- CloudWatch for logs;
+- S3 optional for uploads/exports.
 
-## 13. Endpoints iniciais
+## 13. Initial endpoints
 
 ```text
 GET  /health
 POST /api/analyses
-GET  /api/analyses/{id}/status
-GET  /api/analyses/{id}/report
+GET  /api/analyses/{id}
+GET  /api/analyses/{id}/events
 GET  /api/analyses/{id}/export.md
 ```
 
-O fluxo deve ser assincrono ou simular assincronia com status por etapa, para evitar requests longos e para mostrar o pipeline agentico.
+`GET /api/analyses/{id}` returns the analysis status and, once complete, the structured report. `GET /api/analyses/{id}/events` is a Server-Sent Events stream of stage progress.
 
-## 14. Dados e contratos
+The flow must be asynchronous, or simulate asynchrony with per-stage status, to avoid long requests and to show the agentic pipeline.
+
+## 14. Data and contracts
 
 ### JobInput
 
 ```json
 {
   "description": "",
-  "seniority": "junior|mid|senior|staff",
+  "seniority": "intern|junior|mid|senior|staff",
   "yearsExperience": null,
   "stackTags": [],
   "primaryStacks": [],
@@ -425,71 +427,71 @@ O fluxo deve ser assincrono ou simular assincronia com status por etapa, para ev
 }
 ```
 
-## 15. Analise estatica de GitHub
+## 15. GitHub static analysis
 
-O MVP deve analisar publicamente:
+The MVP must analyze publicly:
 
-- repositorios nao vazios;
-- linguagens;
+- non-empty repositories;
+- languages;
 - README;
 - `package.json`;
 - `go.mod`;
 - `requirements.txt`;
 - `pyproject.toml`;
 - `Dockerfile`;
-- estrutura de pastas;
-- indicios de testes;
-- indicios de CI;
-- indicios de deploy.
+- folder structure;
+- test indicators;
+- CI indicators;
+- deploy indicators.
 
-O MVP nao deve:
+The MVP must not:
 
-- executar codigo;
-- rodar scripts de install;
-- rodar testes de repositorios externos;
-- clonar e executar projetos sem sandbox.
+- execute code;
+- run install scripts;
+- run external repository tests;
+- clone and execute projects without a sandbox.
 
-## 16. PDF e documentos
+## 16. PDF and documents
 
-Documento parsing deve usar uma solucao open source pronta. Preferencia:
+Document parsing must use a ready-made open-source solution. Preference:
 
-- Docling como primeira opcao;
-- fallback para texto colado/manual;
-- OCR desligado por padrao;
-- limite de tamanho;
+- Docling as the first option;
+- fallback to pasted/manual text;
+- OCR disabled by default;
+- size limit;
 - timeout;
-- logs de falha.
+- failure logs.
 
-## 17. Testes
+## 17. Testing
 
 ### Backend
 
-- unit tests para normalizacao de stacks;
-- testes para classificacao de quadrantes;
-- testes para STAR question generation com mocks;
-- testes de handlers HTTP;
-- fixtures para GitHub analysis;
-- LLM calls mockadas.
+- unit tests for stack normalization;
+- tests for quadrant classification;
+- tests for STAR question generation with mocks;
+- HTTP handler tests;
+- fixtures for GitHub analysis;
+- mocked LLM calls.
 
 ### Frontend
 
-- testes de tags;
-- teste de selecao de ate 3 stacks principais;
-- teste de renderizacao da matriz;
-- teste do client API com fetch mockado.
+- tag tests;
+- test for selecting up to 3 primary stacks;
+- test for matrix rendering;
+- test for the API client with a mocked fetch.
 
 ### E2E
 
-Um fluxo Playwright:
+One Playwright flow:
 
-1. preencher vaga;
-2. preencher candidato fake;
-3. iniciar analise;
-4. ver progresso;
-5. ver relatorio mockado;
-6. exportar Markdown.
+1. fill in the job;
+2. fill in a fake candidate;
+3. start the analysis;
+4. watch progress;
+5. view the mocked report;
+6. export Markdown.
 
-## 18. CI minimo
+## 18. Minimal CI
 
 GitHub Actions:
 
@@ -497,159 +499,158 @@ GitHub Actions:
 - frontend lint/typecheck/test/build;
 - Docker build;
 - secret scanning;
-- govulncheck, se nao atrasar;
-- deploy backend separado e manual/main-only.
+- govulncheck, if it does not slow things down;
+- backend deploy separate and manual/main-only.
 
-## 19. Skills e rubricas
+## 19. Skills and rubrics
 
-### Skills para coding agent
+### Skills for the coding agent
 
-Criar skills no repositorio para guiar trabalho AI-native:
+Create skills in the repository to guide AI-native work:
 
 - `tech-maturity-project`;
 - `evidence-matrix-analyst`;
 - `aws-ecs-express-deploy`.
 
-### Rubricas internas dos agentes
+### Internal agent rubrics
 
-Criar arquivos de conhecimento:
+Create knowledge files:
 
 - `evidence_policy.md`;
 - `seniority.md`;
 - `star_method.md`;
 - `stack_taxonomy.json`.
 
-## 20. Workflow Linux, tmux e SSH
+## 20. Linux, tmux, and SSH workflow
 
-Desenvolvimento preferencial em WSL/Ubuntu.
+Preferred development in WSL/Ubuntu.
 
-Uso planejado de tmux:
+Planned use of tmux:
 
-- janela backend;
-- janela frontend;
-- janela tests;
-- janela infra;
-- janela logs;
-- janela git.
+- backend window;
+- frontend window;
+- tests window;
+- infra window;
+- logs window;
+- git window.
 
 SSH:
 
-- acesso ao GitHub por chave SSH;
-- opcional: smoke test em EC2 temporaria, se houver tempo.
+- GitHub access via SSH key;
+- optional: smoke test on a temporary EC2, if there is time.
 
-## 21. Deploy
+## 21. Deployment
 
 ### Frontend
 
 - AWS Amplify;
-- variavel `VITE_API_BASE_URL`;
-- deploy por GitHub.
+- `VITE_API_BASE_URL` variable;
+- deploy via GitHub.
 
 ### Backend
 
 - Dockerfile;
-- push para ECR;
+- push to ECR;
 - ECS Express Mode;
-- logs no CloudWatch;
+- logs in CloudWatch;
 - health check `/health`;
-- env vars para AI provider e GitHub token opcional.
+- env vars for the AI provider and optional GitHub token.
 
 ### Fallback
 
-Se ECS Express Mode travar por disponibilidade, usar Render para backend e documentar o motivo. Amplify permanece como frontend AWS.
+If ECS Express Mode is blocked by availability, use Render for the backend and document the reason. Amplify remains the AWS frontend.
 
-## 22. Riscos
+## 22. Risks
 
-- Docling pesado demais para container pequeno.
-- ECS Express Mode gerar custo maior que esperado.
-- LLM gerar conclusoes fortes demais.
+- Docling too heavy for a small container.
+- ECS Express Mode generating higher-than-expected cost.
+- LLM generating conclusions that are too strong.
 - GitHub API rate limit.
-- PDF de curriculo mal extraido.
-- Escopo crescer por features de chat, banco, login ou scraping.
+- Poorly extracted resume PDF.
+- Scope creep from chat, database, login, or scraping features.
 
-## 23. Mitigacoes
+## 23. Mitigations
 
-- fallback para texto colado;
-- limite de PDF;
-- sem OCR no MVP;
-- sem execucao de codigo de terceiros;
-- prompt conservador;
-- outputs estruturados;
-- testes com mocks;
-- budgets AWS;
-- apagar recursos cloud se nao forem usados.
+- fallback to pasted text;
+- PDF size limit;
+- no OCR in the MVP;
+- no execution of third-party code;
+- conservative prompts;
+- structured outputs;
+- tests with mocks;
+- AWS budgets;
+- delete cloud resources if unused.
 
-## 24. Metricas de sucesso
+## 24. Success metrics
 
-O MVP sera considerado bem-sucedido se:
+The MVP will be considered successful if it:
 
-- estiver publicado no GitHub;
-- tiver README claro;
-- rodar localmente;
-- tiver fluxo demonstravel de ponta a ponta;
-- gerar matriz de evidencias sem score;
-- gerar perguntas STAR;
-- tiver testes minimos;
-- tiver CI verde;
-- tiver pelo menos frontend hospedado na AWS;
-- tiver backend containerizado;
-- tiver deploy backend em ECS Express Mode ou fallback justificado;
-- tiver documentacao de decisoes e trade-offs.
+- is published on GitHub;
+- has a clear README;
+- runs locally;
+- has a demonstrable end-to-end flow;
+- generates an evidence matrix without a score;
+- generates STAR questions;
+- has minimal tests;
+- has green CI;
+- has at least the frontend hosted on AWS;
+- has a containerized backend;
+- has a backend deploy on ECS Express Mode or a justified fallback;
+- has documentation of decisions and trade-offs.
 
-## 25. Narrativa para avaliadores
+## 25. Narrative for evaluators
 
-Este projeto deve ser apresentado como prova de forma de trabalho:
+This project should be presented as proof of a way of working:
 
 > I built a small AI-native recruiting prototype around evidence-first technical maturity analysis. The system avoids cold match scores and instead produces a human-reviewable evidence matrix with STAR interview questions. I used Go, React, TypeScript, Vite, containers, AWS Amplify/ECS, static GitHub analysis, document parsing, tests, CI, and an agentic workflow with conservative reasoning.
 
-## 26. Roadmap sugerido
+## 26. Suggested roadmap
 
-### Dia 1
+### Day 1
 
 - scaffold frontend/backend;
-- contratos de dados;
-- tela vaga/candidato;
-- README atualizado;
+- data contracts;
+- job/candidate screen;
+- updated README;
 - health endpoint.
 
-### Dia 2
+### Day 2
 
-- agent pipeline mockado;
-- matriz e relatorio;
-- export Markdown;
-- testes iniciais.
+- mocked agent pipeline;
+- matrix and report;
+- Markdown export;
+- initial tests.
 
-### Dia 3
+### Day 3
 
 - GitHub static analysis;
-- Docling/fallback texto;
-- prompts/rubricas.
+- Docling/text fallback;
+- prompts/rubrics.
 
-### Dia 4
+### Day 4
 
-- frontend polido;
-- fluxo de progresso;
+- polished frontend;
+- progress flow;
 - STAR questions;
-- self-review do analyst agent.
+- analyst agent self-review.
 
-### Dia 5
+### Day 5
 
 - Docker;
 - CI;
-- deploy Amplify;
-- preparar ECR/ECS.
+- Amplify deploy;
+- prepare ECR/ECS.
 
-### Dia 6
+### Day 6
 
-- deploy backend;
+- backend deploy;
 - CloudWatch/logs;
-- ajustes de timeout e upload.
+- timeout and upload adjustments.
 
-### Dia 7
+### Day 7
 
 - hardening;
 - demo dataset;
 - AI_WORKFLOW.md;
-- video ou roteiro de apresentacao;
-- revisao final.
-
+- video or presentation script;
+- final review.
