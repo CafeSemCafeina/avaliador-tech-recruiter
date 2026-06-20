@@ -1,0 +1,24 @@
+<!-- @dsCard group="Spacing" viewport="700x170" name="Radii & elevation" subtitle="Moderate corners, subtle shadows" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--surface-card); font-family: var(--font-mono); padding: 22px; display: flex; gap: 26px; align-items: flex-end; flex-wrap: wrap; }
+  .item { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .box { width: 64px; height: 48px; background: var(--neutral-50); border: 1px solid var(--border-subtle); }
+  .lbl { font-size: 10px; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+  <div class="item"><div class="box" style="border-radius:var(--radius-sm)"></div><span class="lbl">sm · 5</span></div>
+  <div class="item"><div class="box" style="border-radius:var(--radius-md)"></div><span class="lbl">md · 8</span></div>
+  <div class="item"><div class="box" style="border-radius:var(--radius-lg)"></div><span class="lbl">lg · 10</span></div>
+  <div class="item"><div class="box" style="border-radius:var(--radius-xl)"></div><span class="lbl">xl · 14</span></div>
+  <div class="item"><div class="box" style="border:none;box-shadow:var(--shadow-xs);border-radius:var(--radius-lg)"></div><span class="lbl">shadow xs</span></div>
+  <div class="item"><div class="box" style="border:none;box-shadow:var(--shadow-sm);border-radius:var(--radius-lg)"></div><span class="lbl">shadow sm</span></div>
+  <div class="item"><div class="box" style="border:none;box-shadow:var(--shadow-md);border-radius:var(--radius-lg)"></div><span class="lbl">shadow md</span></div>
+  <div class="item"><div class="box" style="border:none;box-shadow:var(--shadow-lg);border-radius:var(--radius-lg)"></div><span class="lbl">shadow lg</span></div>
+</body>
+</html>

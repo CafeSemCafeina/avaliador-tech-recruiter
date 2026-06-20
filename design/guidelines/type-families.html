@@ -1,0 +1,33 @@
+<!-- @dsCard group="Type" viewport="700x210" name="Font families" subtitle="Sans · Mono · Serif (IBM Plex)" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--surface-card); color: var(--text-primary); padding: 20px 22px; }
+  .block { padding: 10px 0; border-bottom: 1px solid var(--neutral-100); }
+  .block:last-child { border-bottom: none; }
+  .lbl { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .spec { font-size: 20px; }
+  .meta { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+  <div class="block">
+    <div class="lbl">Sans · IBM Plex Sans</div>
+    <div class="spec" style="font-family:var(--font-sans)">UI, body & headings — 400 / 500 / 600 / 700</div>
+    <div class="meta">interface, prose, labels</div>
+  </div>
+  <div class="block">
+    <div class="lbl">Mono · IBM Plex Mono</div>
+    <div class="spec" style="font-family:var(--font-mono)">Data, eyebrows &amp; metadata — 400 / 500 / 600</div>
+    <div class="meta">stack tags · durations · field labels</div>
+  </div>
+  <div class="block">
+    <div class="lbl">Serif · IBM Plex Serif</div>
+    <div class="spec" style="font-family:var(--font-serif)">Analyst report prose — executive summary</div>
+    <div class="meta">long-form report narrative</div>
+  </div>
+</body>
+</html>

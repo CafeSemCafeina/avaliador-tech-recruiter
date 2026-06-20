@@ -31,3 +31,6 @@ tmp/
 uploads/
 reports/
 
+# Archives (design exports are unpacked into the repo, not committed as zips)
+*.zip
+

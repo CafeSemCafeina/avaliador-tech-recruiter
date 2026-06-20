@@ -1,0 +1,46 @@
+<!-- @dsCard group="Colors" viewport="700x200" name="Status — evidence palette" subtitle="Muted quadrant tones: confirmed · validate · gap · uncertain · info" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--surface-card); font-family: var(--font-sans); padding: 18px; }
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .col { display: flex; flex-direction: column; gap: 8px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 500; width: fit-content; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .solid { height: 28px; border-radius: var(--radius-sm); }
+  .lbl { font-family: var(--font-mono); font-size: 9.5px; color: var(--text-muted); letter-spacing: 0.04em; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="col">
+      <span class="lbl">CONFIRMED</span>
+      <span class="pill" style="background:var(--status-confirmed-bg);color:var(--status-confirmed-fg);border:1px solid var(--status-confirmed-border)"><span class="dot" style="background:var(--status-confirmed-solid)"></span>Confirmed</span>
+      <div class="solid" style="background:var(--status-confirmed-solid)"></div>
+    </div>
+    <div class="col">
+      <span class="lbl">VALIDATE</span>
+      <span class="pill" style="background:var(--status-validate-bg);color:var(--status-validate-fg);border:1px solid var(--status-validate-border)"><span class="dot" style="background:var(--status-validate-solid)"></span>Needs validation</span>
+      <div class="solid" style="background:var(--status-validate-solid)"></div>
+    </div>
+    <div class="col">
+      <span class="lbl">GAP</span>
+      <span class="pill" style="background:var(--status-gap-bg);color:var(--status-gap-fg);border:1px solid var(--status-gap-border)"><span class="dot" style="background:var(--status-gap-solid)"></span>Not evidenced</span>
+      <div class="solid" style="background:var(--status-gap-solid)"></div>
+    </div>
+    <div class="col">
+      <span class="lbl">UNCERTAIN</span>
+      <span class="pill" style="background:var(--status-uncertain-bg);color:var(--status-uncertain-fg);border:1px solid var(--status-uncertain-border)"><span class="dot" style="background:var(--status-uncertain-solid)"></span>Inconclusive</span>
+      <div class="solid" style="background:var(--status-uncertain-solid)"></div>
+    </div>
+    <div class="col">
+      <span class="lbl">INFO</span>
+      <span class="pill" style="background:var(--status-info-bg);color:var(--status-info-fg);border:1px solid var(--status-info-border)"><span class="dot" style="background:var(--status-info-solid)"></span>Running</span>
+      <div class="solid" style="background:var(--status-info-solid)"></div>
+    </div>
+  </div>
+</body>
+</html>

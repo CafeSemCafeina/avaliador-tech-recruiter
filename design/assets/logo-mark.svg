@@ -1,0 +1,7 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Technical Maturity Analyzer">
+  <rect x="0.75" y="0.75" width="30.5" height="30.5" rx="7.25" fill="#ffffff" stroke="#e2e6ec" stroke-width="1.5"></rect>
+  <rect x="7" y="7" width="8" height="8" rx="2" fill="#2e7d5b"></rect>
+  <rect x="17" y="7" width="8" height="8" rx="2" fill="#b6792b"></rect>
+  <rect x="7" y="17" width="8" height="8" rx="2" fill="#b5524b"></rect>
+  <rect x="17" y="17" width="8" height="8" rx="2" fill="#64748b"></rect>
+</svg>

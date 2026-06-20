@@ -1,0 +1,49 @@
+<!-- @dsCard group="Components" viewport="700x360" name="Feedback — Badges, Banner, Timeline" subtitle="StatusBadge, Banner, StageItem" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style> body { margin:0; background:var(--bg-app); padding:22px; } </style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const { StatusBadge, Banner, StageItem } = window.TechnicalMaturityAnalyzerDesignSystem_3be3ec;
+const Lbl = ({children}) => <div style={{fontFamily:"var(--font-mono)",fontSize:10,letterSpacing:"0.06em",textTransform:"uppercase",color:"var(--text-muted)",margin:"2px 0 4px"}}>{children}</div>;
+function Demo(){
+  return (
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,alignItems:"start"}}>
+      <div>
+        <Lbl>Status badges</Lbl>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          <StatusBadge tone="confirmed">Confirmed by evidence</StatusBadge>
+          <StatusBadge tone="validate">Needs validation</StatusBadge>
+          <StatusBadge tone="gap">Not publicly evidenced</StatusBadge>
+          <StatusBadge tone="uncertain">Inconclusive</StatusBadge>
+          <StatusBadge tone="info">Running</StatusBadge>
+        </div>
+        <div style={{marginTop:16}}>
+          <Lbl>Banner</Lbl>
+          <Banner tone="info" title="Privacy">Files are processed for this analysis only and stored in memory for the current session.</Banner>
+        </div>
+      </div>
+      <div>
+        <Lbl>Progress timeline</Lbl>
+        <StageItem state="completed" title="Parsing resume" duration="1.2s"/>
+        <StageItem state="completed" title="Reading LinkedIn evidence" duration="0.9s"/>
+        <StageItem state="running" title="Analyzing GitHub repositories" detail="3 public repos"/>
+        <StageItem state="warning" title="Reading portfolio signals" detail="Portfolio URL returned little text"/>
+        <StageItem state="pending" title="Generating STAR questions" last/>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo/>);
+</script>
+</body>
+</html>

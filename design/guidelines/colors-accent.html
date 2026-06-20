@@ -1,0 +1,26 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Accent — calm blue" subtitle="Links, focus, primary actions" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--surface-card); font-family: var(--font-sans); padding: 18px; }
+  .row { display: flex; gap: 10px; }
+  .sw { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .chip { height: 64px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); }
+  .name { font-family: var(--font-mono); font-size: 10px; color: var(--text-secondary); }
+  .hex { font-family: var(--font-mono); font-size: 9.5px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--blue-50)"></div><span class="name">blue 50</span><span class="hex">#eef4fc</span></div>
+    <div class="sw"><div class="chip" style="background:var(--blue-100)"></div><span class="name">blue 100</span><span class="hex">#d8e6f8</span></div>
+    <div class="sw"><div class="chip" style="background:var(--blue-200)"></div><span class="name">blue 200</span><span class="hex">#b0cbf0</span></div>
+    <div class="sw"><div class="chip" style="background:var(--blue-500)"></div><span class="name">blue 500 · accent</span><span class="hex">#2f6bbf</span></div>
+    <div class="sw"><div class="chip" style="background:var(--blue-600)"></div><span class="name">blue 600 · hover</span><span class="hex">#2557a0</span></div>
+    <div class="sw"><div class="chip" style="background:var(--blue-700)"></div><span class="name">blue 700 · active</span><span class="hex">#1e4683</span></div>
+  </div>
+</body>
+</html>

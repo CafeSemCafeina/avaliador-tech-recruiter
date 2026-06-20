@@ -1,0 +1,42 @@
+/* ============================================================
+   Technical Maturity Analyzer — Base / reset helpers
+   Lightweight, opt-in. Tokens do the heavy lifting.
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+.tma-root,
+body.tma {
+  margin: 0;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Utility text roles (optional) */
+.tma-eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.tma-mono { font-family: var(--font-mono); }
+.tma-serif { font-family: var(--font-serif); }
+
+/* Keyframes used by components */
+@keyframes tma-spin { to { transform: rotate(360deg); } }
+@keyframes tma-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+/* Shared focus treatment */
+.tma-focusable:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-color: var(--accent);
+}

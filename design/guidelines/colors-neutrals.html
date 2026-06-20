@@ -1,0 +1,30 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Neutrals — cool slate" subtitle="Background, surfaces, borders, text" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--surface-card); font-family: var(--font-sans); padding: 18px; }
+  .row { display: flex; gap: 8px; }
+  .sw { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .chip { height: 52px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); }
+  .name { font-family: var(--font-mono); font-size: 10px; color: var(--text-secondary); }
+  .hex { font-family: var(--font-mono); font-size: 9.5px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--neutral-0)"></div><span class="name">0</span><span class="hex">#ffffff</span></div>
+    <div class="sw"><div class="chip" style="background:var(--neutral-50)"></div><span class="name">50</span><span class="hex">#f6f8fa</span></div>
+    <div class="sw"><div class="chip" style="background:var(--neutral-100)"></div><span class="name">100</span><span class="hex">#eef1f4</span></div>
+    <div class="sw"><div class="chip" style="background:var(--neutral-200)"></div><span class="name">200</span><span class="hex">#e2e6ec</span></div>
+    <div class="sw"><div class="chip" style="background:var(--neutral-300)"></div><span class="name">300</span><span class="hex">#cdd3dc</span></div>
+    <div class="sw"><div class="chip" style="background:var(--neutral-400)"></div><span class="name">400</span><span class="hex">#a6afbd</span></div>
+    <div class="sw"><div class="chip" style="background:var(--neutral-500)"></div><span class="name">500</span><span class="hex">#7b8595</span></div>
+    <div class="sw"><div class="chip" style="background:var(--neutral-600)"></div><span class="name">600</span><span class="hex">#5a6473</span></div>
+    <div class="sw"><div class="chip" style="background:var(--neutral-700)"></div><span class="name">700</span><span class="hex">#3e4756</span></div>
+    <div class="sw"><div class="chip" style="background:var(--neutral-900)"></div><span class="name">900</span><span class="hex">#18202f</span></div>
+  </div>
+</body>
+</html>
