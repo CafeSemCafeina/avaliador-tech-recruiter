@@ -27,7 +27,6 @@ This MVP turns those inputs into an analyst-style report:
 
 - [Product Requirements Document](docs/PRD.md)
 - [Technical Design](docs/TECHNICAL_DESIGN.md)
-- [Recruiting Tooling and UI Research](docs/RECRUITING_TOOLING_DESIGN_RESEARCH.md)
 - [Architecture Decision Records](docs/adr/README.md)
 
 ## Core Concept
