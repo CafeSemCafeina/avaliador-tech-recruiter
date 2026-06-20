@@ -119,6 +119,11 @@ func Validate(r contract.Report, expected contract.Seniority) []Violation {
 	return vs
 }
 
+// ScanText applies the vocabulary, no-score, numeric-fit, and demographic scans
+// to an arbitrary block of text (e.g. a rendered Markdown export), so a renderer
+// can verify it introduces no policy violation (spec 005 AC3).
+func ScanText(text string) []Violation { return scanText("text", text) }
+
 // scanText applies the vocabulary, no-score, numeric-fit, and demographic
 // scans to one text field.
 func scanText(path, text string) []Violation {
