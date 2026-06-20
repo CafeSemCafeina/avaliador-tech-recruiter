@@ -34,6 +34,8 @@ Build in the risk-ordered tiers in [docs/EXECUTION_PLAN.md](docs/EXECUTION_PLAN.
 
 A tier is "done" only when the evaluation gates (L0 contract + L1 policy + L2 mock fixtures, [docs/EVALUATION.md](docs/EVALUATION.md)) are green in CI. Live model/GitHub/cloud calls never run in the default test suite — mock them.
 
+Each unit of work has a **spec** under `specs/` (see `specs/README.md`, format in [docs/adr/0014-spec-layer-implementation-contracts.md](docs/adr/0014-spec-layer-implementation-contracts.md)). A spec defines behavior with acceptance criteria mapped to the eval gates, names the paths it owns, and ends with a "Done when" eval command. **Do not implement a unit before its spec is `Ready`**, and do not let a spec drift from the PRD/TD/ADRs it cites. Specs 001–005 cover the Tier 1 floor; the contract-seam spec (001) is frozen first.
+
 ## Agentic development workflow
 
 This codebase is built primarily by AI agents using a **hybrid orchestrator-plus-specialist** model ([docs/adr/0013-hybrid-orchestrator-specialist-agent-workflow.md](docs/adr/0013-hybrid-orchestrator-specialist-agent-workflow.md)): a precise orchestrator owns the contracts, the `LLMClient`/eval seam, and merges; specialist workers fan out on partitioned packages in separate git worktrees, gated by the eval suite. Practical consequences when operating here:
