@@ -18,3 +18,4 @@ The goal is to make the reasoning visible: what we chose, what we rejected, why 
 - [ADR 0010 - Prefer project skills and agent rubrics before MCP](0010-skills-and-rubrics-before-mcp.md)
 - [ADR 0011 - Use Gemini first and spike Google ADK](0011-use-gemini-and-spike-google-adk.md)
 - [ADR 0012 - Use Claude Design for frontend UI generation](0012-use-claude-design-for-frontend-ui.md)
+- [ADR 0013 - Build with a hybrid orchestrator-plus-specialist agent workflow](0013-hybrid-orchestrator-specialist-agent-workflow.md)
