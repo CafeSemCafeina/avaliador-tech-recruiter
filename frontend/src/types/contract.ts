@@ -92,6 +92,19 @@ export interface Report {
   limitations: string[];
 }
 
+export type StageStatus = 'pending' | 'running' | 'completed' | 'warning' | 'failed';
+
+export interface StageEvent {
+  analysisId: string;
+  stage: string;
+  name: string;
+  status: StageStatus;
+  message: string;
+  timestamp: string;
+  durationMs?: number;
+  error?: string;
+}
+
 export const QUADRANTS: Quadrant[] = [
   'strong_with_evidence',
   'strong_needs_validation',

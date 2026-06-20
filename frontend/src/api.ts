@@ -1,0 +1,74 @@
+// HTTP client for the analysis API. The UI renders from the structured Report
+// JSON returned here — never from the Markdown export.
+import type { CandidateInput, JobInput, Report, StageEvent } from './types/contract';
+import { assertNoScoreField } from './policy';
+
+const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8080';
+
+export interface FieldErrors {
+  [field: string]: string;
+}
+
+export class ValidationError extends Error {
+  errors: FieldErrors;
+  constructor(errors: FieldErrors) {
+    super('validation failed');
+    this.name = 'ValidationError';
+    this.errors = errors;
+  }
+}
+
+/** Creates an analysis and returns its id, or throws ValidationError on 400. */
+export async function createAnalysis(job: JobInput, candidate: CandidateInput): Promise<string> {
+  const res = await fetch(`${BASE}/api/analyses`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ job, candidate }),
+  });
+  if (res.status === 400) {
+    const body = (await res.json()) as { errors?: FieldErrors };
+    throw new ValidationError(body.errors ?? { body: 'invalid input' });
+  }
+  if (!res.ok) throw new Error(`create failed: ${res.status}`);
+  const body = (await res.json()) as { analysisId: string };
+  return body.analysisId;
+}
+
+/** Opens an SSE stream of stage events. Returns a close function. */
+export function streamEvents(
+  id: string,
+  onEvent: (ev: StageEvent) => void,
+  onClose: () => void,
+): () => void {
+  const es = new EventSource(`${BASE}/api/analyses/${id}/events`);
+  es.onmessage = (e) => {
+    try {
+      onEvent(JSON.parse(e.data) as StageEvent);
+    } catch {
+      // ignore malformed frames
+    }
+  };
+  es.onerror = () => {
+    // The server closes the stream on terminal state, which surfaces as an
+    // error event in EventSource; treat it as a clean close.
+    es.close();
+    onClose();
+  };
+  return () => es.close();
+}
+
+/** Fetches the completed report, asserting it carries no score-like field. */
+export async function fetchReport(id: string): Promise<Report> {
+  const res = await fetch(`${BASE}/api/analyses/${id}`);
+  if (!res.ok) throw new Error(`status failed: ${res.status}`);
+  const body = (await res.json()) as { state: string; report?: Report; error?: string };
+  if (body.state === 'failed') throw new Error(body.error || 'analysis failed');
+  if (!body.report) throw new Error('report not ready');
+  assertNoScoreField(body.report);
+  return body.report;
+}
+
+/** URL of the Markdown export for a completed analysis. */
+export function exportUrl(id: string): string {
+  return `${BASE}/api/analyses/${id}/export.md`;
+}
