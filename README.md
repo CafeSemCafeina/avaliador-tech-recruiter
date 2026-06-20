@@ -23,6 +23,10 @@ This MVP turns those inputs into an analyst-style report:
 - what looks weak but needs validation;
 - which STAR questions should be asked in the technical screening.
 
+## Product Documentation
+
+- [Product Requirements Document](docs/PRD.md)
+
 ## Core Concept
 
 The report uses a four-quadrant evidence matrix:
