@@ -1,7 +1,7 @@
 # Spec 005: Markdown export
 
 - **Tier:** 1
-- **Status:** Implemented (renderer + golden/policy tests done; HTTP wiring lands with spec 002)
+- **Status:** Implemented
 - **Related to:** PRD §7, §8 (step 4); TECHNICAL_DESIGN §3, §5; ADR-0002; EVALUATION L0/L1
 - **Estimate:** S
 - **Owner engine:** small-model / gemini (mechanical rendering from a typed object)

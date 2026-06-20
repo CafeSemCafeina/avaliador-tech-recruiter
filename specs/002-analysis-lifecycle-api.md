@@ -1,7 +1,7 @@
 # Spec 002: Analysis lifecycle API
 
 - **Tier:** 1
-- **Status:** Draft
+- **Status:** Implemented
 - **Related to:** PRD §13; TECHNICAL_DESIGN §3, §4; ADR-0013; EVALUATION L0
 - **Estimate:** M
 - **Owner engine:** codex (bounded, correctness-critical: state machine + concurrency)
