@@ -27,6 +27,8 @@ This MVP turns those inputs into an analyst-style report:
 
 - [Product Requirements Document](docs/PRD.md)
 - [Technical Design](docs/TECHNICAL_DESIGN.md)
+- [Execution Plan](docs/EXECUTION_PLAN.md)
+- [Evaluation Strategy](docs/EVALUATION.md)
 - [Architecture Decision Records](docs/adr/README.md)
 
 ## Core Concept
