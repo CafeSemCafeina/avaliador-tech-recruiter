@@ -1,7 +1,7 @@
 # Spec 004: Report generation policy
 
 - **Tier:** 1
-- **Status:** Draft
+- **Status:** In progress (Go validator + L0/L1 tests done; runner wiring lands with spec 002, frontend numeric guard with the UI)
 - **Related to:** PRD §6, §9, §11.9; TECHNICAL_DESIGN §5, §6; ADR-0002; EVALUATION L0/L1
 - **Estimate:** M
 - **Owner engine:** orchestrator (eval-critical: encodes the product's core constraint)

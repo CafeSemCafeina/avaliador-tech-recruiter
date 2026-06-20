@@ -1,0 +1,13 @@
+# Canonical machine-readable forbidden-vocabulary list (one term per line).
+# Single source of truth shared by the policy validator and (Tier 2) the agent
+# prompt rubrics, so prompt and check never diverge (CLAUDE.md, EVALUATION §4).
+# Kept in sync with the human-facing list in design/readme.md by a guard test
+# (TestForbiddenListMatchesDesignReadme). Lines starting with # are ignored.
+Failed
+Bad candidate
+Unqualified
+No experience
+Match score
+Hire
+Reject
+Pass/fail
