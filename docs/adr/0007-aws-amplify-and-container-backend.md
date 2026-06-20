@@ -1,0 +1,60 @@
+# ADR 0007 - Deploy frontend on AWS Amplify and backend as a container
+
+Status: Accepted  
+Date: 2026-06-20
+
+## Context
+
+The project should demonstrate basic AWS literacy without turning a one-week MVP into a DevOps project.
+
+The frontend is a React/Vite app. The backend is a Go API that may need document parsing dependencies and an agent pipeline. These have different hosting needs.
+
+## Decision
+
+Deploy the frontend on AWS Amplify and the backend as a container through AWS ECS Express Mode when available.
+
+Planned cloud components:
+
+- Amplify for React + TypeScript + Vite frontend hosting;
+- ECR for backend Docker image;
+- ECS Express Mode for backend container;
+- CloudWatch for logs;
+- S3 optional for uploads/exports in a later phase.
+
+## Alternatives considered
+
+### Host everything on Amplify
+
+Rejected. Amplify is a good frontend path, but not the natural place for a persistent Go API with document parsing.
+
+### Use EC2 as a VPS
+
+Rejected for the MVP. It is flexible and useful for learning, but requires more server administration, SSH, reverse proxy, TLS, updates, and process management.
+
+### Use Render for all backend hosting
+
+Rejected as primary path. It is simpler, but the project should demonstrate AWS. It remains a fallback if AWS setup blocks progress.
+
+### Use ECS Express Mode for backend container
+
+Accepted. It is closer to a managed container platform and shows container/cloud deployment without managing a VM.
+
+## Consequences
+
+Positive:
+
+- clear cloud story;
+- frontend and backend can be deployed independently;
+- backend remains portable as a Docker image;
+- CloudWatch logs demonstrate operational awareness.
+
+Negative:
+
+- ECS/ECR setup adds complexity;
+- costs must be controlled with budgets and cleanup;
+- stateless backend design is required.
+
+## Validation
+
+The backend must expose `/health`, run in Docker locally, and be deployable from an image. The frontend must use `VITE_API_BASE_URL` to call the backend. If ECS blocks progress, the fallback must be documented.
+

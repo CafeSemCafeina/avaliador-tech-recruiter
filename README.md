@@ -26,6 +26,7 @@ This MVP turns those inputs into an analyst-style report:
 ## Product Documentation
 
 - [Product Requirements Document](docs/PRD.md)
+- [Architecture Decision Records](docs/adr/README.md)
 
 ## Core Concept
 
