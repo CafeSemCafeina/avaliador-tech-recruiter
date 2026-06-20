@@ -25,5 +25,6 @@ A spec defines **behavior**, not decisions. It is the precondition for coding it
 | 003 | [Mock analysis pipeline & stage events](003-mock-analysis-pipeline.md) | 1 | Implemented |
 | 004 | [Report generation policy](004-report-generation-policy.md) | 1 | Implemented |
 | 005 | [Markdown export](005-markdown-export.md) | 1 | Implemented |
+| 006 | [Gemini text-agent pipeline](006-gemini-text-agent-pipeline.md) | 2 | Draft |
 
-Specs 001–005 cover the Tier 1 mock-mode floor ([EXECUTION_PLAN](../docs/EXECUTION_PLAN.md)). Per-agent specs for real (Gemini) mode and the evidence ingestion units (GitHub, Docling, portfolio) are added at Tier 2+.
+Specs 001–005 cover the Tier 1 mock-mode floor ([EXECUTION_PLAN](../docs/EXECUTION_PLAN.md)). Spec 006 begins Tier 2 (real Gemini behind `LLMClient`). Further evidence-ingestion units (GitHub-lite, Docling, portfolio) are added at Tier 3+.
