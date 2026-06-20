@@ -1,0 +1,33 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+dist/
+coverage/
+
+# Go
+bin/
+*.test
+*.out
+
+# Python/doc parsing
+.venv/
+__pycache__/
+*.pyc
+
+# Temporary uploads/reports
+tmp/
+uploads/
+reports/
+
