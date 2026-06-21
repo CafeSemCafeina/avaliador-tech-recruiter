@@ -1,0 +1,9 @@
+{
+  "name": "alpha-service",
+  "full_name": "octo/alpha-service",
+  "description": "Fictitious service used for offline tests.",
+  "pushed_at": "2026-05-01T12:00:00Z",
+  "owner": {
+    "login": "octo"
+  }
+}

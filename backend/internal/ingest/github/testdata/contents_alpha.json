@@ -1,0 +1,18 @@
+[
+  {
+    "name": "README.md",
+    "type": "file"
+  },
+  {
+    "name": "go.mod",
+    "type": "file"
+  },
+  {
+    "name": "Dockerfile",
+    "type": "file"
+  },
+  {
+    "name": "tests",
+    "type": "dir"
+  }
+]
