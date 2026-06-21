@@ -34,6 +34,10 @@ reports/
 # Archives (design exports are unpacked into the repo, not committed as zips)
 *.zip
 
+# Codex/agent CLI logs (contain auth/account ids — never commit)
+error.log
+*.log
+
 # Orchestration: agent worktrees live inside the repo, gitignored (ADR-0016)
 .worktrees/
 # per-worktree agent work order (assembled, not source)
