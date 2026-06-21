@@ -1,7 +1,7 @@
 # Spec 009: Portfolio mini-crawler
 
 - **Tier:** 3 (3c)
-- **Status:** Ready
+- **Status:** Implemented
 - **Related to:** PRD §11.5; TECHNICAL_DESIGN §11; ADR-0002; EXECUTION_PLAN Tier 3c; EVALUATION L0/L1
 - **Estimate:** S
 - **Owner engine:** codex

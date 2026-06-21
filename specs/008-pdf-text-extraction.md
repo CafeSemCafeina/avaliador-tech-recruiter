@@ -1,7 +1,7 @@
 # Spec 008: PDF text extraction (resume / LinkedIn)
 
 - **Tier:** 3 (3b)
-- **Status:** Ready
+- **Status:** Implemented
 - **Related to:** PRD §16; TECHNICAL_DESIGN §9, §16; ADR-0017; ADR-0002; EXECUTION_PLAN Tier 3b; EVALUATION L0
 - **Estimate:** M
 - **Owner engine:** codex
