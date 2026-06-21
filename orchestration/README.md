@@ -13,6 +13,7 @@ A spec is the unit of partition and the work order. The **eval gates — not eye
 | [`monitor.ps1`](monitor.ps1) | Live status of a running swarm (running / GREEN / RED per agent). |
 | [`gate.ps1`](gate.ps1) | Run the eval gates (backend gofmt/vet/test + frontend typecheck/test/build). Exit 0 = mergeable. The merge filter. |
 | [`prompt-template.md`](prompt-template.md) | Guardrail preamble prepended to every spec (non-negotiables, scope discipline, git discipline). |
+| [`sync-agent-skills.ps1`](sync-agent-skills.ps1) | Mirror `.claude/skills` → `.agents/skills` (gitignored) so Codex/agy see the same project skills. Run after changing a skill. |
 
 ## Engines (terminal-drivable, verified 2026-06-21)
 
