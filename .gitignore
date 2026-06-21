@@ -38,4 +38,7 @@ reports/
 .worktrees/
 # per-worktree agent work order (assembled, not source)
 .agent-task.md
+# Engine-agnostic skills mirror — generated from .claude/skills by
+# orchestration/sync-agent-skills.ps1 (single source: .claude/skills)
+.agents/
 
