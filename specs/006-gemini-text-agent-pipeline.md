@@ -1,7 +1,7 @@
 # Spec 006: Gemini text-agent pipeline
 
 - **Tier:** 2
-- **Status:** Implemented (offline AC1–AC6 green; AC7 live smoke pending — verified the key/models are reachable and graceful degradation works end to end, but real LLM reasoning is unverified because the Gemini account's prepay credits are exhausted: all `generateContent` calls return 429)
+- **Status:** Implemented (offline AC1–AC6 green; AC7 verified live on **Vertex AI** — all six text agents produced real Gemini output that passed L0/L1, with `ANALYSIS_MODE=gemini` + `GOOGLE_GENAI_USE_VERTEXAI=true` against a billing-linked GCP project. The Gemini Developer API key path is implemented but returns 429 on that account; Vertex is the working backend, per ADR-0011)
 - **Related to:** PRD §11; TECHNICAL_DESIGN §2, §7; ADR-0002; ADR-0003; ADR-0011; EVALUATION L0/L1/L2/L3; EXECUTION_PLAN Tier 2
 - **Estimate:** L
 - **Owner engine:** orchestrator (defines the real agent layer + prompts) with codex/gemini workers per agent
