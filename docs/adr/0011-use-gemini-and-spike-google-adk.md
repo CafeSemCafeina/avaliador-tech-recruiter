@@ -86,3 +86,16 @@ The spike should produce a small documented result:
 
 If ADK is accepted, update the PRD and implementation docs to name it as the agent framework. If rejected, update this ADR with the reason and proceed with Gemini Go SDK via `LLMClient`.
 
+## Update — Vertex AI backend (2026-06-21)
+
+Tier 2 (spec 006) is implemented with the Gemini Go SDK (`google.golang.org/genai`) behind `LLMClient`, as planned. During live verification the **Gemini Developer API** (AI Studio API key) returned `429 RESOURCE_EXHAUSTED — prepayment credits depleted` on every `generateContent` call, and the available **Google Cloud Free Trial** credit does not apply to that prepay billing.
+
+**Decision:** support **both** genai backends behind the same `LLMClient`, selectable by environment, and default this project to **Vertex AI**, because the Free Trial credit covers Vertex AI Gemini:
+
+- `GOOGLE_GENAI_USE_VERTEXAI=true` → Vertex AI backend, authenticated via Application Default Credentials (`gcloud auth application-default login`), billed to `GOOGLE_CLOUD_PROJECT` in `GOOGLE_CLOUD_LOCATION` (default `global`).
+- unset/false → Gemini Developer API backend, authenticated via `GOOGLE_API_KEY`.
+
+Both paths produce identical behavior through the pipeline; only client construction differs (`internal/llm`). The two-tier model strategy and per-agent mock fallback are unchanged. This keeps the provider seam intact and lets the project run real reasoning on the credit that is actually available.
+
+**Consequences:** Vertex requires a GCP project + ADC (one-time `gcloud` login) rather than a single API key; the SDK and `LLMClient` contract are unchanged, so the rest of the system is unaffected.
+

@@ -6,6 +6,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -25,21 +26,32 @@ func main() {
 	case "mock":
 		p = pipeline.NewMock()
 	case "gemini":
-		apiKey := os.Getenv("GOOGLE_API_KEY")
-		if apiKey == "" {
-			log.Fatal("ANALYSIS_MODE=gemini requires GOOGLE_API_KEY environment variable")
-		}
+		useVertex := isTrue(os.Getenv("GOOGLE_GENAI_USE_VERTEXAI"))
 		fastModel := getenv("GEMINI_MODEL_FAST", "gemini-3.5-flash")
 		strongModel := getenv("GEMINI_MODEL_STRONG", "gemini-3.1-pro-preview")
+		base := llm.Options{
+			UseVertex: useVertex,
+			APIKey:    os.Getenv("GOOGLE_API_KEY"),
+			Project:   os.Getenv("GOOGLE_CLOUD_PROJECT"),
+			Location:  os.Getenv("GOOGLE_CLOUD_LOCATION"),
+		}
 
-		log.Printf("initializing Gemini clients (fast=%s, strong=%s)...", fastModel, strongModel)
+		backend := "Gemini Developer API (GOOGLE_API_KEY)"
+		if useVertex {
+			backend = fmt.Sprintf("Vertex AI (project=%s, location=%s)", base.Project, getenv("GOOGLE_CLOUD_LOCATION", "global"))
+		}
+		log.Printf("initializing Gemini clients via %s (fast=%s, strong=%s)...", backend, fastModel, strongModel)
 		ctx := context.Background()
 
-		fastClient, err := llm.NewClient(ctx, apiKey, fastModel)
+		fastOpts := base
+		fastOpts.Model = fastModel
+		fastClient, err := llm.New(ctx, fastOpts)
 		if err != nil {
 			log.Fatalf("failed to initialize fast LLM client: %v", err)
 		}
-		strongClient, err := llm.NewClient(ctx, apiKey, strongModel)
+		strongOpts := base
+		strongOpts.Model = strongModel
+		strongClient, err := llm.New(ctx, strongOpts)
 		if err != nil {
 			log.Fatalf("failed to initialize strong LLM client: %v", err)
 		}
@@ -63,6 +75,15 @@ func getenv(key, def string) string {
 		return v
 	}
 	return def
+}
+
+// isTrue reports whether an env value is an affirmative flag.
+func isTrue(v string) bool {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "1", "true", "yes", "on":
+		return true
+	}
+	return false
 }
 
 func loadEnv(filepath string) {

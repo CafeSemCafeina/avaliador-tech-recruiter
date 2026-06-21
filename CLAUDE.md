@@ -16,7 +16,7 @@ Backend (run in `backend/`):
 - `go test ./...` — full suite (L0 contract, L1 policy, L2 mock fixtures, offline Gemini pipeline tests).
 - Single test: `go test ./internal/eval -run TestForbiddenVocabularyRejected`.
 - `go vet ./...`; format check `gofmt -l .` (must be empty) or fix format `gofmt -w .`; `go run ./cmd/server` (honours `PORT`, `ANALYSIS_MODE`).
-- Gemini mode run: Copy `.env.example` to `.env`, set `GOOGLE_API_KEY`, and run `go run ./cmd/server`.
+- Gemini mode run (ADR-0011): copy `.env.example` to `.env`. Default backend is **Vertex AI** (`GOOGLE_GENAI_USE_VERTEXAI=true` + `GOOGLE_CLOUD_PROJECT`; auth via `gcloud auth application-default login`); the Gemini Developer API (`GOOGLE_API_KEY`) is used when Vertex is off. Then `go run ./cmd/server`.
 - Regenerate the export golden after an intentional change: `UPDATE_GOLDEN=1 go test ./internal/export`.
 
 Frontend (run in `frontend/`):

@@ -21,7 +21,8 @@ Add the first real reasoning behind the existing `LLMClient`/`Pipeline` seams: a
 ## Technical context
 
 - **Provider/seam:** Gemini Go SDK wrapped by a concrete `LLMClient` (`internal/llm`), satisfying the existing `pipeline.LLMClient` interface (no import cycle — structural). The `gemini` `Pipeline` depends only on `LLMClient` + the contract types, so it is a drop-in alongside the mock (ADR-0011).
-- **Two-tier models (ADR-0011):** a fast model for extraction/summarization, a stronger model for evidence checking, quadrant classification, and the final analyst. Both configurable: `GEMINI_MODEL_FAST`, `GEMINI_MODEL_STRONG`. Auth via `GOOGLE_API_KEY`.
+- **Two-tier models (ADR-0011):** a fast model for extraction/summarization, a stronger model for evidence checking, quadrant classification, and the final analyst. Both configurable: `GEMINI_MODEL_FAST`, `GEMINI_MODEL_STRONG`.
+- **Backend selection (ADR-0011 update):** two genai backends behind the same `LLMClient`. Default **Vertex AI** (`GOOGLE_GENAI_USE_VERTEXAI=true`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` default `global`; ADC auth) so the GCP Free Trial credit applies; **Gemini Developer API** (`GOOGLE_API_KEY`) when Vertex is off.
 - **Hybrid pipeline:** the ten stages still emit in order (spec 003). Text agents (`JobProfileAgent`, `ResumeEvidenceAgent`, `EvidenceCheckerAgent`, `QuadrantClassifierAgent`, `TechnicalMaturityAnalystAgent`) call Gemini; the ingestion stages (`LinkedIn/GitHub/Portfolio`) reuse the mock behavior until Tier 3.
 - **Structured output:** each agent prompt requests JSON matching the relevant contract fragment; the agent parses it into the contract types. Malformed/again-invalid output triggers the agent's fallback.
 - **Policy is injected, not duplicated:** every agent prompt embeds the evidence policy and the forbidden-vocabulary list loaded from the single shared source (`eval.ForbiddenVocabulary`) so prompt and check never diverge (CLAUDE.md, spec 004).
