@@ -135,6 +135,49 @@ The project is intended to be developed from a Linux-like environment, preferabl
 - Docker for backend packaging.
 - GitHub Actions for CI.
 
+## Running the Backend
+
+The Go backend runs by default in `mock` mode:
+```bash
+cd backend
+go run ./cmd/server
+```
+
+### Gemini Mode (Spec 006)
+
+Real Gemini agents run behind the same `LLMClient` seam with two selectable backends (ADR-0011). Copy `backend/.env.example` to `backend/.env` and pick one.
+
+**Vertex AI (default — uses the GCP Free Trial credit).** Authenticate once with Application Default Credentials, then configure the project:
+```bash
+gcloud auth application-default login
+```
+```env
+ANALYSIS_MODE=gemini
+GOOGLE_GENAI_USE_VERTEXAI=true
+GOOGLE_CLOUD_PROJECT=your-gcp-project-id
+GOOGLE_CLOUD_LOCATION=global
+GEMINI_MODEL_FAST=gemini-3.5-flash
+GEMINI_MODEL_STRONG=gemini-3.1-pro-preview
+PORT=8080
+```
+
+**Gemini Developer API (API key).** Used only when `GOOGLE_GENAI_USE_VERTEXAI` is unset/false:
+```env
+ANALYSIS_MODE=gemini
+GOOGLE_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL_FAST=gemini-3.5-flash
+GEMINI_MODEL_STRONG=gemini-3.1-pro-preview
+PORT=8080
+```
+
+Then run (the server loads `.env` automatically):
+```bash
+cd backend
+go run ./cmd/server
+```
+If a provider call fails, each agent degrades to a deterministic fallback, so the run always completes with a valid, policy-compliant report.
+
 ## Current Status
 
 Repository initialized. Implementation has not started yet.
+
