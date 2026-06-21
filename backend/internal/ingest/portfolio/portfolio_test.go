@@ -62,25 +62,37 @@ func TestFetchPortfolioEvidence(t *testing.T) {
 
 func TestFetchPortugueseAllowListPath(t *testing.T) {
 	t.Parallel()
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html")
-		if r.URL.Path == "/projetos" {
-			fmt.Fprint(w, `<html><body><h1>Projetos</h1><p>Portfolio com estudo de caso ficticio.</p></body></html>`)
-			return
-		}
-		http.NotFound(w, r)
-	}))
-	defer server.Close()
+	for _, tc := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{name: "projetos", path: "/projetos", want: "Projetos"},
+		{name: "curriculo_with_accent", path: "/currículo", want: "Curriculo"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/html")
+				if r.URL.Path == tc.path {
+					fmt.Fprintf(w, `<html><body><h1>%s</h1><p>Portfolio com estudo de caso ficticio.</p></body></html>`, tc.want)
+					return
+				}
+				http.NotFound(w, r)
+			}))
+			defer server.Close()
 
-	evidence, err := Fetch(context.Background(), server.URL, Options{HTTPClient: server.Client(), Timeout: time.Second, PageTimeout: time.Second})
-	if err != nil {
-		t.Fatalf("Fetch: %v", err)
-	}
-	if evidence.Degraded {
-		t.Fatal("expected Portuguese fixed path to produce evidence")
-	}
-	if !strings.Contains(evidence.Summary.VisibleText, "Projetos") {
-		t.Fatalf("expected Portuguese path text, got %q", evidence.Summary.VisibleText)
+			evidence, err := Fetch(context.Background(), server.URL, Options{HTTPClient: server.Client(), Timeout: time.Second, PageTimeout: time.Second})
+			if err != nil {
+				t.Fatalf("Fetch: %v", err)
+			}
+			if evidence.Degraded {
+				t.Fatal("expected Portuguese fixed path to produce evidence")
+			}
+			if !strings.Contains(evidence.Summary.VisibleText, tc.want) {
+				t.Fatalf("expected Portuguese path text, got %q", evidence.Summary.VisibleText)
+			}
+		})
 	}
 }
 
@@ -134,6 +146,26 @@ func TestFetchDegradesOnUnreachableRedirectLoopAndByteCap(t *testing.T) {
 			t.Fatalf("expected degraded empty evidence, got %#v", evidence)
 		}
 	})
+
+	t.Run("byte_cap_after_successful_page", func(t *testing.T) {
+		t.Parallel()
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			if r.URL.Path == "/" {
+				fmt.Fprint(w, "<html><body>Root project text.</body></html>")
+				return
+			}
+			fmt.Fprint(w, "<html><body>"+strings.Repeat("large ", 100)+"</body></html>")
+		}))
+		defer server.Close()
+		evidence, err := Fetch(context.Background(), server.URL, Options{HTTPClient: server.Client(), MaxBytes: 80, Timeout: time.Second, PageTimeout: time.Second})
+		if err != nil {
+			t.Fatalf("expected degraded nil error, got %v", err)
+		}
+		if !evidence.Degraded || len(evidence.Sources) != 0 {
+			t.Fatalf("expected degraded empty evidence after byte cap, got %#v", evidence)
+		}
+	})
 }
 
 func TestFetchCapsPagesAndUsesOnlyAllowList(t *testing.T) {
@@ -160,6 +192,37 @@ func TestFetchCapsPagesAndUsesOnlyAllowList(t *testing.T) {
 	}
 	if seen.has("/secret") {
 		t.Fatal("crawler followed an arbitrary link outside the allow-list")
+	}
+}
+
+func TestFetchIgnoresConfiguredPathsOutsideFixedAllowList(t *testing.T) {
+	t.Parallel()
+	seen := safeSeen{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seen.add(r.URL.Path)
+		w.Header().Set("Content-Type", "text/html")
+		if r.URL.Path == "/projects" {
+			fmt.Fprint(w, `<html><body><p>Project page text.</p></body></html>`)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	evidence, err := Fetch(context.Background(), server.URL, Options{
+		HTTPClient:  server.Client(),
+		Paths:       []string{"/secret", "/projects", "/curr%C3%ADculo"},
+		Timeout:     time.Second,
+		PageTimeout: time.Second,
+	})
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	if evidence.Degraded {
+		t.Fatal("expected allowed configured path to produce evidence")
+	}
+	if seen.has("/secret") {
+		t.Fatal("crawler fetched a configured path outside the fixed allow-list")
 	}
 }
 

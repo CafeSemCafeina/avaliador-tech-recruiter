@@ -3,10 +3,12 @@ package portfolio
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"sort"
 	"strings"
 	"time"
@@ -33,8 +35,10 @@ var defaultPaths = []string{
 	"/sobre",
 	"/projetos",
 	"/curriculo",
-	"/curr%C3%ADculo",
+	"/currículo",
 }
+
+var errByteCapExceeded = errors.New("portfolio: byte cap exceeded")
 
 // Evidence is the bounded output consumed by a future PortfolioEvidenceAgent.
 type Evidence struct {
@@ -74,7 +78,15 @@ func Fetch(ctx context.Context, rawURL string, opts Options) (Evidence, error) {
 	var pages []pageResult
 	var usedBytes int64
 	for _, fixedPath := range opts.Paths {
+		select {
+		case <-ctx.Done():
+			return degraded(), nil
+		default:
+		}
 		if len(pages) >= opts.MaxPages {
+			break
+		}
+		if usedBytes >= opts.MaxBytes {
 			break
 		}
 		pageURL := *root
@@ -83,12 +95,12 @@ func Fetch(ctx context.Context, rawURL string, opts Options) (Evidence, error) {
 		pageURL.Fragment = ""
 		page, size, err := fetchPage(ctx, opts, pageURL.String(), opts.MaxBytes-usedBytes)
 		if err != nil {
+			if errors.Is(err, errByteCapExceeded) {
+				return degraded(), nil
+			}
 			continue
 		}
 		usedBytes += size
-		if usedBytes > opts.MaxBytes {
-			return degraded(), nil
-		}
 		pages = append(pages, page)
 	}
 	if len(pages) == 0 {
@@ -111,6 +123,11 @@ func (o Options) withDefaults() Options {
 	}
 	if len(o.Paths) == 0 {
 		o.Paths = append([]string(nil), defaultPaths...)
+	} else {
+		o.Paths = fixedAllowListPaths(o.Paths)
+		if len(o.Paths) == 0 {
+			o.Paths = append([]string(nil), defaultPaths...)
+		}
 	}
 	if o.MaxPages <= 0 || o.MaxPages > defaultMaxPages {
 		o.MaxPages = defaultMaxPages
@@ -125,6 +142,45 @@ func (o Options) withDefaults() Options {
 		o.PageTimeout = defaultPageLimit
 	}
 	return o
+}
+
+func fixedAllowListPaths(paths []string) []string {
+	allowed := make(map[string]bool, len(defaultPaths))
+	for _, fixedPath := range defaultPaths {
+		allowed[normalizeFixedPath(fixedPath)] = true
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, candidate := range paths {
+		normalized := normalizeFixedPath(candidate)
+		if !allowed[normalized] || seen[normalized] {
+			continue
+		}
+		seen[normalized] = true
+		out = append(out, normalized)
+	}
+	return out
+}
+
+func normalizeFixedPath(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	if parsed, err := url.Parse(raw); err == nil && parsed.Path != "" {
+		raw = parsed.Path
+	}
+	if decoded, err := url.PathUnescape(raw); err == nil {
+		raw = decoded
+	}
+	if !strings.HasPrefix(raw, "/") {
+		raw = "/" + raw
+	}
+	cleaned := path.Clean(raw)
+	if cleaned == "." {
+		return "/"
+	}
+	return cleaned
 }
 
 func parseRoot(raw string) (*url.URL, error) {
@@ -150,7 +206,7 @@ type pageResult struct {
 
 func fetchPage(ctx context.Context, opts Options, rawURL string, remainingBytes int64) (pageResult, int64, error) {
 	if remainingBytes <= 0 {
-		return pageResult{}, 0, fmt.Errorf("portfolio: byte cap reached")
+		return pageResult{}, 0, errByteCapExceeded
 	}
 	pageCtx, cancel := context.WithTimeout(ctx, opts.PageTimeout)
 	defer cancel()
@@ -176,7 +232,7 @@ func fetchPage(ctx context.Context, opts Options, rawURL string, remainingBytes 
 		return pageResult{}, 0, err
 	}
 	if int64(len(body)) > remainingBytes {
-		return pageResult{}, int64(len(body)), fmt.Errorf("portfolio: byte cap exceeded")
+		return pageResult{}, int64(len(body)), errByteCapExceeded
 	}
 	text, links := extractVisibleTextAndLinks(strings.NewReader(string(body)), rawURL)
 	u, _ := url.Parse(rawURL)
@@ -304,7 +360,7 @@ func evidenceFromPages(root string, pages []pageResult) Evidence {
 func projectSignals(text string) []string {
 	lower := strings.ToLower(text)
 	var signals []string
-	for _, term := range []string{"project", "case study", "portfolio", "resume", "cv"} {
+	for _, term := range []string{"project", "case study", "portfolio", "resume", "cv", "projeto", "estudo de caso", "curriculo", "currículo"} {
 		if strings.Contains(lower, term) {
 			signals = append(signals, term)
 		}
