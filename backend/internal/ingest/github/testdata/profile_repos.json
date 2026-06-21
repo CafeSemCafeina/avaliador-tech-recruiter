@@ -1,0 +1,20 @@
+[
+  {
+    "name": "alpha-service",
+    "full_name": "octo/alpha-service",
+    "description": "Fictitious service used for offline tests.",
+    "pushed_at": "2026-05-01T12:00:00Z",
+    "owner": {
+      "login": "octo"
+    }
+  },
+  {
+    "name": "notes",
+    "full_name": "octo/notes",
+    "description": "Small notes repo.",
+    "pushed_at": "2025-01-01T12:00:00Z",
+    "owner": {
+      "login": "octo"
+    }
+  }
+]
