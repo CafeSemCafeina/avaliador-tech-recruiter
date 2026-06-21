@@ -54,10 +54,10 @@ if (-not $Engine) {
   Write-Host "auto-selected engine '$Engine' from owner: $owner" -ForegroundColor DarkGray
 }
 
-$wtRoot = if ($WorktreeRoot) { $WorktreeRoot } else { Join-Path (Split-Path $repo -Parent) "atr-worktrees" }
+$wtRoot = if ($WorktreeRoot) { $WorktreeRoot } else { Join-Path $repo ".worktrees" }
 New-Item -ItemType Directory -Force $wtRoot | Out-Null
-$branch = "feat/spec-$specId-$Engine"
-$wt = Join-Path $wtRoot "spec-$specId-$Engine"
+$branch = "$Engine/spec-$specId"               # e.g. codex/spec-007 (ADR-0016)
+$wt = Join-Path $wtRoot "spec-$specId-$Engine" # .worktrees/spec-007-codex
 
 if (-not (Test-Path $wt)) {
   Write-Host "creating worktree $wt on branch $branch" -ForegroundColor Cyan
