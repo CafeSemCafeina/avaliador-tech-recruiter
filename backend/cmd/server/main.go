@@ -4,23 +4,49 @@
 package main
 
 import (
+	"bufio"
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/api"
+	"github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/llm"
 	"github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/pipeline"
 )
 
 func main() {
+	loadEnv(".env")
+
 	mode := getenv("ANALYSIS_MODE", "mock")
 	var p pipeline.Pipeline
 	switch mode {
 	case "mock":
 		p = pipeline.NewMock()
+	case "gemini":
+		apiKey := os.Getenv("GOOGLE_API_KEY")
+		if apiKey == "" {
+			log.Fatal("ANALYSIS_MODE=gemini requires GOOGLE_API_KEY environment variable")
+		}
+		fastModel := getenv("GEMINI_MODEL_FAST", "gemini-3.5-flash")
+		strongModel := getenv("GEMINI_MODEL_STRONG", "gemini-3.1-pro-preview")
+
+		log.Printf("initializing Gemini clients (fast=%s, strong=%s)...", fastModel, strongModel)
+		ctx := context.Background()
+
+		fastClient, err := llm.NewClient(ctx, apiKey, fastModel)
+		if err != nil {
+			log.Fatalf("failed to initialize fast LLM client: %v", err)
+		}
+		strongClient, err := llm.NewClient(ctx, apiKey, strongModel)
+		if err != nil {
+			log.Fatalf("failed to initialize strong LLM client: %v", err)
+		}
+
+		p = pipeline.NewGeminiPipeline(fastClient, strongClient)
 	default:
-		// gemini and other real modes arrive in Tier 2 behind LLMClient.
-		log.Printf("ANALYSIS_MODE=%q not available yet; falling back to mock", mode)
+		log.Printf("ANALYSIS_MODE=%q not available; falling back to mock", mode)
 		p = pipeline.NewMock()
 	}
 
@@ -37,4 +63,33 @@ func getenv(key, def string) string {
 		return v
 	}
 	return def
+}
+
+func loadEnv(filepath string) {
+	f, err := os.Open(filepath)
+	if err != nil {
+		return // ignore if file doesn't exist
+	}
+	defer f.Close()
+
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(parts[0])
+		val := strings.TrimSpace(parts[1])
+		// Remove surrounding quotes if present
+		if len(val) >= 2 && ((val[0] == '"' && val[len(val)-1] == '"') || (val[0] == '\'' && val[len(val)-1] == '\'')) {
+			val = val[1 : len(val)-1]
+		}
+		if os.Getenv(key) == "" {
+			os.Setenv(key, val)
+		}
+	}
 }

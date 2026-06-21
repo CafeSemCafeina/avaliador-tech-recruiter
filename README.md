@@ -135,6 +135,32 @@ The project is intended to be developed from a Linux-like environment, preferabl
 - Docker for backend packaging.
 - GitHub Actions for CI.
 
+## Running the Backend
+
+The Go backend runs by default in `mock` mode:
+```bash
+cd backend
+go run ./cmd/server
+```
+
+### Gemini Mode (Spec 006)
+
+To run the backend using real Gemini LLM agents, copy `backend/.env.example` to `backend/.env`, configure your `GOOGLE_API_KEY`, and specify the models to use:
+```env
+ANALYSIS_MODE=gemini
+GOOGLE_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL_FAST=gemini-3.5-flash
+GEMINI_MODEL_STRONG=gemini-3.1-pro-preview
+PORT=8080
+```
+Then run:
+```bash
+cd backend
+go run ./cmd/server
+```
+The server will automatically load the configuration from the `.env` file.
+
 ## Current Status
 
 Repository initialized. Implementation has not started yet.
+

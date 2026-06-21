@@ -13,9 +13,10 @@ The stack and structure are fixed by the docs (do not re-decide them):
 ### Commands
 
 Backend (run in `backend/`):
-- `go test ./...` — full suite (L0 contract, L1 policy, L2 mock fixtures).
+- `go test ./...` — full suite (L0 contract, L1 policy, L2 mock fixtures, offline Gemini pipeline tests).
 - Single test: `go test ./internal/eval -run TestForbiddenVocabularyRejected`.
-- `go vet ./...`; format check `gofmt -l .` (must be empty); `go run ./cmd/server` (honours `PORT`, `ANALYSIS_MODE`).
+- `go vet ./...`; format check `gofmt -l .` (must be empty) or fix format `gofmt -w .`; `go run ./cmd/server` (honours `PORT`, `ANALYSIS_MODE`).
+- Gemini mode run: Copy `.env.example` to `.env`, set `GOOGLE_API_KEY`, and run `go run ./cmd/server`.
 - Regenerate the export golden after an intentional change: `UPDATE_GOLDEN=1 go test ./internal/export`.
 
 Frontend (run in `frontend/`):
