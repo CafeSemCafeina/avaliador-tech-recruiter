@@ -179,5 +179,6 @@ If a provider call fails, each agent degrades to a deterministic fallback, so th
 
 ## Current Status
 
-Repository initialized. Implementation has not started yet.
+The repository has a working mock-mode floor, a Gemini-backed text-agent pipeline behind `LLMClient`, and Tier 3 ingestion packages for GitHub-lite evidence, Go-native PDF text extraction, and bounded portfolio crawling.
 
+Current integration boundary: GitHub and portfolio ingestion packages are implemented but not yet wired into the `gemini` pipeline stages, and PDF extraction is implemented as a backend package but not yet exposed through an upload/API flow. The next implementation step is an orchestrator-owned wiring spec that feeds these real ingestion signals into the report while preserving the mock-mode fallback.

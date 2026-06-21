@@ -26,8 +26,8 @@ A spec defines **behavior**, not decisions. It is the precondition for coding it
 | 004 | [Report generation policy](004-report-generation-policy.md) | 1 | Implemented |
 | 005 | [Markdown export](005-markdown-export.md) | 1 | Implemented |
 | 006 | [Gemini text-agent pipeline](006-gemini-text-agent-pipeline.md) | 2 | Implemented |
-| 007 | [GitHub-lite evidence ingestion](007-github-lite-evidence.md) | 3a | Ready |
-| 008 | [PDF text extraction](008-pdf-text-extraction.md) | 3b | Ready |
-| 009 | [Portfolio mini-crawler](009-portfolio-mini-crawler.md) | 3c | Ready |
+| 007 | [GitHub-lite evidence ingestion](007-github-lite-evidence.md) | 3a | Implemented |
+| 008 | [PDF text extraction](008-pdf-text-extraction.md) | 3b | Implemented |
+| 009 | [Portfolio mini-crawler](009-portfolio-mini-crawler.md) | 3c | Implemented |
 
-Specs 001–005 cover the Tier 1 mock-mode floor ([EXECUTION_PLAN](../docs/EXECUTION_PLAN.md)). Spec 006 covers Tier 2 (real Gemini behind `LLMClient`). Specs 007–009 define the Tier 3 evidence-ingestion swarm: GitHub-lite, Go-native PDF text extraction, and the portfolio mini-crawler.
+Specs 001–005 cover the Tier 1 mock-mode floor ([EXECUTION_PLAN](../docs/EXECUTION_PLAN.md)). Spec 006 covers Tier 2 (real Gemini behind `LLMClient`). Specs 007–009 implement the Tier 3 evidence-ingestion packages: GitHub-lite, Go-native PDF text extraction, and the portfolio mini-crawler. Pipeline/API wiring remains a separate orchestrator-owned integration step.
