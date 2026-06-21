@@ -378,11 +378,14 @@ AI provider
 
 ```text
 GET  /health
+POST /api/documents/extract-text
 POST /api/analyses
 GET  /api/analyses/{id}
 GET  /api/analyses/{id}/events
 GET  /api/analyses/{id}/export.md
 ```
+
+`POST /api/documents/extract-text` is a synchronous `multipart/form-data` helper for a resume or exported LinkedIn PDF. It returns extracted text, page count, a `hasText` flag, and user-safe warnings. The recruiter reviews or edits that text before starting an analysis. Uploaded bytes are not persisted and never enter the LLM, analysis store, report, or export.
 
 `GET /api/analyses/{id}` returns the analysis status and, once complete, the structured report. `GET /api/analyses/{id}/events` is a Server-Sent Events stream of stage progress.
 
@@ -458,9 +461,12 @@ Document parsing must use a ready-made open-source solution. Preference:
 - Go-native PDF text extraction as the first option (ADR 0017);
 - fallback to pasted/manual text;
 - OCR disabled by default;
-- size limit;
-- timeout;
+- 10 MB size limit;
+- 20-page limit;
+- 5-second extraction timeout;
 - failure logs.
+
+PDF upload is a preprocessing step, not part of `CandidateInput`. The frontend sends the file to `POST /api/documents/extract-text`, fills the existing `resumeText` or `linkedinText` field from the response, and then submits the normal JSON analysis request. Empty/scanned PDFs return a safe no-text result so manual paste remains available. Oversized or malformed files return bounded field-level errors without exposing parser internals.
 
 ## 17. Testing
 
