@@ -1,11 +1,11 @@
 # Spec 010: Tier 3 ingestion pipeline wiring
 
 - **Tier:** 3 integration
-- **Status:** Ready
+- **Status:** Implemented
 - **Related to:** PRD §11.4, §11.5, §15, §16; TECHNICAL_DESIGN §7, §10, §11, §15; ADR-0002; ADR-0003; ADR-0009; ADR-0011; ADR-0017; EXECUTION_PLAN Tier 3
 - **Estimate:** M
 - **Owner engine:** orchestrator
-- **Partition (paths this spec owns):** `backend/internal/pipeline/gemini*.go`, `backend/internal/pipeline/prompts/`, `backend/cmd/server/main.go`, `backend/.env.example`, `README.md`, and this spec index. It consumes but does not redefine `backend/internal/ingest/github/`, `backend/internal/ingest/portfolio/`, or `backend/internal/ingest/pdf/`.
+- **Partition (paths this spec owns):** `backend/internal/pipeline/gemini*.go`, `backend/internal/pipeline/prompts/`, `backend/cmd/server/main.go`, `backend/.env.example`, `README.md`, `specs/010-tier3-ingestion-pipeline-wiring.md`, and `specs/README.md`. It consumes but does not redefine `backend/internal/ingest/github/`, `backend/internal/ingest/portfolio/`, or `backend/internal/ingest/pdf/`.
 - **Depends on:** spec 001, spec 004, spec 006, spec 007, spec 008, spec 009
 
 ## Objective
@@ -40,12 +40,12 @@ Wire the implemented Tier 3 ingestion packages into the real `gemini` pipeline s
 
 ## Tasks
 
-- [ ] Add a small ingestion configuration/seam to `GeminiPipeline` for GitHub token and injectable GitHub/portfolio fetch functions.
-- [ ] Replace mocked `github_evidence` and `portfolio_evidence` stages with calls to the implemented ingest packages, preserving graceful degradation.
-- [ ] Include compact source/summary context in the evidence-checking prompt variables.
-- [ ] Wire `GITHUB_TOKEN` from `cmd/server` into Gemini mode.
-- [ ] Add offline tests proving source propagation, degraded ingestion fallback, no-network behavior, and unchanged mock behavior.
-- [ ] Document the integration boundary and env var behavior.
+- [x] Add a small ingestion configuration/seam to `GeminiPipeline` for GitHub token and injectable GitHub/portfolio fetch functions.
+- [x] Replace mocked `github_evidence` and `portfolio_evidence` stages with calls to the implemented ingest packages, preserving graceful degradation.
+- [x] Include compact source/summary context in the evidence-checking prompt variables.
+- [x] Wire `GITHUB_TOKEN` from `cmd/server` into Gemini mode.
+- [x] Add offline tests proving source propagation, degraded ingestion fallback, no-network behavior, and unchanged mock behavior.
+- [x] Document the integration boundary and env var behavior.
 
 ## Done when
 

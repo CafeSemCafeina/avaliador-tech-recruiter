@@ -5,7 +5,7 @@
 - **Related to:** PRD §16; TECHNICAL_DESIGN §9, §16; ADR-0017; ADR-0002; EXECUTION_PLAN Tier 3b; EVALUATION L0
 - **Estimate:** M
 - **Owner engine:** codex
-- **Partition (paths this spec owns):** `backend/internal/ingest/pdf/` (new package). Does **not** edit the API or pipeline wiring — the orchestrator adds the upload/parse entry point at integration.
+- **Partition (paths this spec owns):** `backend/internal/ingest/pdf/` and `specs/008-pdf-text-extraction.md`. Does **not** edit the API or pipeline wiring — the orchestrator adds the upload/parse entry point at integration.
 - **Depends on:** spec 001 (contracts)
 
 ## Objective
@@ -21,7 +21,7 @@ Extract plain text from an uploaded resume or exported-LinkedIn **PDF**, so the 
 ## Technical context
 
 - Pure-Go PDF text extraction (ADR-0017 picks the library). Input: PDF bytes; output: extracted UTF-8 text + a small status (page count, whether text was found).
-- Bounds (PRD §16): size limit, page cap, per-call timeout; reject oversized input with a clear error. OCR off.
+- Bounds (PRD §16): 10 MB, 20 pages, and a 5-second per-call timeout; reject oversized input with a clear error. OCR off.
 - A scanned/empty PDF yields empty text + a "no extractable text" status, so the caller falls back to paste-text — never an error that breaks the run.
 - This package only extracts text; it produces no `contract.Source` directly (the downstream resume/LinkedIn agents already source pasted text the same way).
 - **Offline tests only:** committed fixture PDFs (fictitious content); no network.
@@ -29,7 +29,7 @@ Extract plain text from an uploaded resume or exported-LinkedIn **PDF**, so the 
 ## Acceptance criteria
 
 - **AC1** [L2] Given a committed text-based fixture PDF, when `Extract` runs, then it returns the expected text (key phrases present) and `hasText=true`.
-- **AC2** Given a PDF over the size or page cap, when `Extract` runs, then it returns a clear bounds error and extracts nothing.
+- **AC2** Given a PDF over 10 MB or 20 pages, when `Extract` runs with default options, then it returns a clear bounds error and extracts nothing.
 - **AC3** Given a scanned/image-only or empty PDF, when `Extract` runs, then it returns empty text with `hasText=false` (no panic), so the caller uses the paste fallback.
 - **AC4** [L0] No network calls and no external process/binary spawned (pure Go); verified offline.
 - **AC5** `Extract` respects `ctx` cancellation and the configured timeout.
