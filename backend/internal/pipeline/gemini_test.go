@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/contract"
@@ -59,6 +60,24 @@ func (f *fakeLLMClient) assertPromptMissing(t *testing.T, substr string) {
 			t.Fatalf("prompt leaked sensitive value %q", substr)
 		}
 	}
+}
+
+type readOnlyLLMClient struct {
+	responses map[string]string
+}
+
+func (f readOnlyLLMClient) Generate(_ context.Context, prompt string) (string, error) {
+	keys := make([]string, 0, len(f.responses))
+	for key := range f.responses {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		if strings.Contains(prompt, key) {
+			return f.responses[key], nil
+		}
+	}
+	return "", fmt.Errorf("readOnlyLLMClient: no response matched prompt")
 }
 
 // sampleFakeResponses returns mock JSON responses representing clean Gemini outputs
@@ -560,6 +579,158 @@ func TestGeminiPipelineRejectsMissingLLMClients(t *testing.T) {
 				t.Fatalf("expected explicit LLM client error, got %v", err)
 			}
 		})
+	}
+}
+
+func TestGeminiPipelineGitHubFetcherStates(t *testing.T) {
+	tests := []struct {
+		name         string
+		rawURL       string
+		evidence     ingestgithub.Evidence
+		fetchErr     error
+		wantCalled   bool
+		wantWarning  bool
+		wantDegraded bool
+	}{
+		{name: "absent"},
+		{name: "error", rawURL: "https://github.com/example", fetchErr: fmt.Errorf("network error"), wantCalled: true, wantWarning: true, wantDegraded: true},
+		{name: "empty", rawURL: "https://github.com/example", wantCalled: true, wantWarning: true, wantDegraded: true},
+		{name: "degraded", rawURL: "https://github.com/example", evidence: ingestgithub.Evidence{Degraded: true}, wantCalled: true, wantWarning: true, wantDegraded: true},
+		{
+			name:   "success",
+			rawURL: "https://github.com/example",
+			evidence: ingestgithub.Evidence{Sources: []contract.Source{
+				{Kind: contract.SourceGitHub, Detail: "Repository example/demo shows Go."},
+			}},
+			wantCalled: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			called := false
+			p := &GeminiPipeline{
+				githubFetch: func(context.Context, string, string) (ingestgithub.Evidence, error) {
+					called = true
+					return tt.evidence, tt.fetchErr
+				},
+			}
+			evidence, err := p.fetchGitHubEvidence(context.Background(), tt.rawURL)
+			if called != tt.wantCalled {
+				t.Fatalf("called=%v, want %v", called, tt.wantCalled)
+			}
+			if (err != nil) != tt.wantWarning {
+				t.Fatalf("warning=%v, want %v (err=%v)", err != nil, tt.wantWarning, err)
+			}
+			if evidence.Degraded != tt.wantDegraded {
+				t.Fatalf("degraded=%v, want %v", evidence.Degraded, tt.wantDegraded)
+			}
+		})
+	}
+}
+
+func TestGeminiPipelinePortfolioFetcherStates(t *testing.T) {
+	tests := []struct {
+		name         string
+		rawURL       string
+		evidence     ingestportfolio.Evidence
+		fetchErr     error
+		wantCalled   bool
+		wantWarning  bool
+		wantDegraded bool
+	}{
+		{name: "absent"},
+		{name: "error", rawURL: "https://example.dev", fetchErr: fmt.Errorf("network error"), wantCalled: true, wantWarning: true, wantDegraded: true},
+		{name: "empty", rawURL: "https://example.dev", wantCalled: true, wantWarning: true, wantDegraded: true},
+		{name: "degraded", rawURL: "https://example.dev", evidence: ingestportfolio.Evidence{Degraded: true}, wantCalled: true, wantWarning: true, wantDegraded: true},
+		{
+			name:   "success",
+			rawURL: "https://example.dev",
+			evidence: ingestportfolio.Evidence{Sources: []contract.Source{
+				{Kind: contract.SourcePortfolio, Detail: "Portfolio path /projetos exposes project text."},
+			}},
+			wantCalled: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			called := false
+			p := &GeminiPipeline{
+				portfolioFetch: func(context.Context, string, ingestportfolio.Options) (ingestportfolio.Evidence, error) {
+					called = true
+					return tt.evidence, tt.fetchErr
+				},
+			}
+			evidence, err := p.fetchPortfolioEvidence(context.Background(), tt.rawURL)
+			if called != tt.wantCalled {
+				t.Fatalf("called=%v, want %v", called, tt.wantCalled)
+			}
+			if (err != nil) != tt.wantWarning {
+				t.Fatalf("warning=%v, want %v (err=%v)", err != nil, tt.wantWarning, err)
+			}
+			if evidence.Degraded != tt.wantDegraded {
+				t.Fatalf("degraded=%v, want %v", evidence.Degraded, tt.wantDegraded)
+			}
+		})
+	}
+}
+
+func TestGeminiPipelineSupportsConcurrentRuns(t *testing.T) {
+	responses := sampleFakeResponses()
+	client := readOnlyLLMClient{responses: responses}
+	p := NewGeminiPipelineWithIngestion(client, client, GeminiIngestionOptions{
+		GitHubFetch: func(context.Context, string, string) (ingestgithub.Evidence, error) {
+			return ingestgithub.Evidence{
+				Sources: []contract.Source{
+					{Kind: contract.SourceGitHub, Detail: "Repository example/demo shows languages: React, TypeScript."},
+				},
+				Summary: ingestgithub.Summary{Languages: []string{"React", "TypeScript"}},
+			}, nil
+		},
+		PortfolioFetch: func(context.Context, string, ingestportfolio.Options) (ingestportfolio.Evidence, error) {
+			return ingestportfolio.Evidence{
+				Sources: []contract.Source{
+					{Kind: contract.SourcePortfolio, Detail: "Portfolio path /projects exposes project text."},
+				},
+				Summary: ingestportfolio.Summary{PagesFetched: []string{"/projects"}},
+			}, nil
+		},
+	})
+
+	job := contract.JobInput{
+		Description:   "Frontend role.",
+		Seniority:     contract.SeniorityMid,
+		StackTags:     []string{"React", "TypeScript"},
+		PrimaryStacks: []string{"React", "TypeScript"},
+	}
+	candidate := contract.CandidateInput{
+		ResumeText:   "React and TypeScript developer.",
+		GithubURL:    "https://github.com/example/demo",
+		PortfolioURL: "https://example.dev",
+	}
+
+	const runs = 24
+	errs := make(chan error, runs)
+	var wg sync.WaitGroup
+	for i := 0; i < runs; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			report, err := p.Run(context.Background(), fmt.Sprintf("analysis-concurrent-%d", i), job, candidate, nil)
+			if err != nil {
+				errs <- fmt.Errorf("run %d: %w", i, err)
+				return
+			}
+			if violations := eval.Validate(report, job.Seniority); len(violations) > 0 {
+				errs <- fmt.Errorf("run %d policy violations: %v", i, violations)
+			}
+		}(i)
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		t.Error(err)
 	}
 }
 
