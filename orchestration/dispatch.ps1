@@ -28,6 +28,12 @@ $ErrorActionPreference = "Stop"
 
 $repo = (& git rev-parse --show-toplevel).Trim()
 $specFile = Get-ChildItem "$repo/specs" -Filter "$Spec*.md" -ErrorAction SilentlyContinue | Select-Object -First 1
+if (-not $specFile -and $Spec -match '^\d+$') {
+  # Resolve a numeric id regardless of zero-padding (5 / 05 / 005 -> 005-*.md).
+  $n = [int]$Spec
+  $specFile = Get-ChildItem "$repo/specs" -Filter "*.md" -ErrorAction SilentlyContinue |
+  Where-Object { $_.BaseName -match "^0*$n-" } | Select-Object -First 1
+}
 if (-not $specFile) { throw "spec '$Spec' not found under specs/" }
 $specId = ($specFile.BaseName -split '-')[0]
 $specText = Get-Content $specFile.FullName -Raw
@@ -84,3 +90,7 @@ Write-Host "`nReview & merge when the gates are green:" -ForegroundColor Cyan
 Write-Host "  pwsh orchestration/gate.ps1 -Root `"$wt`""
 Write-Host "  git -C `"$repo`" merge --no-ff $branch     # or open a PR from $branch"
 Write-Host "  git -C `"$repo`" worktree remove `"$wt`""
+
+# Structured result (last pipeline output) so swarm.ps1 can consume it. Write-Host
+# above goes to the host, not the pipeline, so this is the only returned object.
+[pscustomobject]@{ Spec = $specId; Engine = $Engine; Branch = $branch; Worktree = $wt; Task = $task }
