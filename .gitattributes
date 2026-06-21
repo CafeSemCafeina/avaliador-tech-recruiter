@@ -1,0 +1,18 @@
+# Normalize all text files to LF in the repo and the working tree, so local
+# tooling on Windows matches CI/Linux (gofmt, prettier, etc.) and the recurring
+# "LF will be replaced by CRLF" churn stops.
+* text=auto eol=lf
+
+# Binary assets — never touch line endings.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.woff  binary
+*.woff2 binary
+*.ttf  binary
+*.otf  binary
+*.zip  binary
+*.pdf  binary
