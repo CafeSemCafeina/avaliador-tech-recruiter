@@ -34,3 +34,6 @@ reports/
 # Archives (design exports are unpacked into the repo, not committed as zips)
 *.zip
 
+# Orchestration: per-worktree agent work order (assembled, not source)
+.agent-task.md
+
