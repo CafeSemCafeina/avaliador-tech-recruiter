@@ -56,7 +56,9 @@ func main() {
 			log.Fatalf("failed to initialize strong LLM client: %v", err)
 		}
 
-		p = pipeline.NewGeminiPipeline(fastClient, strongClient)
+		p = pipeline.NewGeminiPipelineWithIngestion(fastClient, strongClient, pipeline.GeminiIngestionOptions{
+			GitHubToken: os.Getenv("GITHUB_TOKEN"),
+		})
 	default:
 		log.Printf("ANALYSIS_MODE=%q not available; falling back to mock", mode)
 		p = pipeline.NewMock()

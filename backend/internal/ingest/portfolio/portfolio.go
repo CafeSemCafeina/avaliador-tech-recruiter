@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"path"
@@ -58,12 +59,13 @@ type Summary struct {
 
 // Options controls crawl bounds and enables offline tests.
 type Options struct {
-	HTTPClient  *http.Client
-	Paths       []string
-	MaxPages    int
-	MaxBytes    int64
-	Timeout     time.Duration
-	PageTimeout time.Duration
+	HTTPClient        *http.Client
+	Paths             []string
+	MaxPages          int
+	MaxBytes          int64
+	Timeout           time.Duration
+	PageTimeout       time.Duration
+	AllowPrivateHosts bool
 }
 
 func Fetch(ctx context.Context, rawURL string, opts Options) (Evidence, error) {
@@ -74,6 +76,11 @@ func Fetch(ctx context.Context, rawURL string, opts Options) (Evidence, error) {
 	opts = opts.withDefaults()
 	ctx, cancel := context.WithTimeout(ctx, opts.Timeout)
 	defer cancel()
+	if !opts.AllowPrivateHosts {
+		if err := validatePublicTarget(ctx, root); err != nil {
+			return degraded(), nil
+		}
+	}
 
 	var pages []pageResult
 	var usedBytes int64
@@ -110,17 +117,36 @@ func Fetch(ctx context.Context, rawURL string, opts Options) (Evidence, error) {
 }
 
 func (o Options) withDefaults() Options {
+	var client http.Client
 	if o.HTTPClient == nil {
-		o.HTTPClient = &http.Client{
-			Timeout: defaultPageLimit,
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				if len(via) >= 3 {
-					return http.ErrUseLastResponse
-				}
-				return nil
-			},
-		}
+		client.Timeout = defaultPageLimit
+	} else {
+		client = *o.HTTPClient
 	}
+	baseTransport := client.Transport
+	if baseTransport == nil {
+		baseTransport = http.DefaultTransport
+	}
+	client.Transport = publicOnlyTransport{
+		base:         baseTransport,
+		allowPrivate: o.AllowPrivateHosts,
+	}
+	originalCheckRedirect := client.CheckRedirect
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if len(via) >= 3 {
+			return http.ErrUseLastResponse
+		}
+		if !o.AllowPrivateHosts {
+			if err := validatePublicTarget(req.Context(), req.URL); err != nil {
+				return err
+			}
+		}
+		if originalCheckRedirect != nil {
+			return originalCheckRedirect(req, via)
+		}
+		return nil
+	}
+	o.HTTPClient = &client
 	if len(o.Paths) == 0 {
 		o.Paths = append([]string(nil), defaultPaths...)
 	} else {
@@ -142,6 +168,52 @@ func (o Options) withDefaults() Options {
 		o.PageTimeout = defaultPageLimit
 	}
 	return o
+}
+
+type publicOnlyTransport struct {
+	base         http.RoundTripper
+	allowPrivate bool
+}
+
+func (t publicOnlyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if !t.allowPrivate {
+		if err := validatePublicTarget(req.Context(), req.URL); err != nil {
+			return nil, err
+		}
+	}
+	return t.base.RoundTrip(req)
+}
+
+func validatePublicTarget(ctx context.Context, target *url.URL) error {
+	host := strings.TrimSpace(strings.ToLower(target.Hostname()))
+	if host == "" || host == "localhost" || strings.HasSuffix(host, ".localhost") {
+		return errors.New("portfolio: private or invalid target")
+	}
+	if ip := net.ParseIP(host); ip != nil {
+		if !isPublicIP(ip) {
+			return errors.New("portfolio: private target")
+		}
+		return nil
+	}
+	addresses, err := net.DefaultResolver.LookupIPAddr(ctx, host)
+	if err != nil || len(addresses) == 0 {
+		return errors.New("portfolio: target resolution failed")
+	}
+	for _, address := range addresses {
+		if !isPublicIP(address.IP) {
+			return errors.New("portfolio: private target")
+		}
+	}
+	return nil
+}
+
+func isPublicIP(ip net.IP) bool {
+	return ip.IsGlobalUnicast() &&
+		!ip.IsPrivate() &&
+		!ip.IsLoopback() &&
+		!ip.IsLinkLocalUnicast() &&
+		!ip.IsLinkLocalMulticast() &&
+		!ip.IsUnspecified()
 }
 
 func fixedAllowListPaths(paths []string) []string {

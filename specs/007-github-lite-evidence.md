@@ -1,7 +1,7 @@
 # Spec 007: GitHub-lite evidence ingestion
 
 - **Tier:** 3 (3a)
-- **Status:** Ready
+- **Status:** Implemented
 - **Related to:** PRD §11.4, §15; TECHNICAL_DESIGN §10; ADR-0002; ADR-0011; EXECUTION_PLAN Tier 3a; EVALUATION L0/L1
 - **Estimate:** M
 - **Owner engine:** codex

@@ -30,7 +30,7 @@ func TestFetchPortfolioEvidence(t *testing.T) {
 	}))
 	defer server.Close()
 
-	evidence, err := Fetch(context.Background(), server.URL, Options{HTTPClient: server.Client(), Timeout: time.Second, PageTimeout: time.Second})
+	evidence, err := Fetch(context.Background(), server.URL, Options{HTTPClient: server.Client(), Timeout: time.Second, PageTimeout: time.Second, AllowPrivateHosts: true})
 	if err != nil {
 		t.Fatalf("Fetch: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestFetchPortugueseAllowListPath(t *testing.T) {
 			}))
 			defer server.Close()
 
-			evidence, err := Fetch(context.Background(), server.URL, Options{HTTPClient: server.Client(), Timeout: time.Second, PageTimeout: time.Second})
+			evidence, err := Fetch(context.Background(), server.URL, Options{HTTPClient: server.Client(), Timeout: time.Second, PageTimeout: time.Second, AllowPrivateHosts: true})
 			if err != nil {
 				t.Fatalf("Fetch: %v", err)
 			}
@@ -122,7 +122,7 @@ func TestFetchDegradesOnUnreachableRedirectLoopAndByteCap(t *testing.T) {
 			}
 			return nil
 		}
-		evidence, err := Fetch(context.Background(), server.URL, Options{HTTPClient: client, Timeout: time.Second, PageTimeout: time.Second})
+		evidence, err := Fetch(context.Background(), server.URL, Options{HTTPClient: client, Timeout: time.Second, PageTimeout: time.Second, AllowPrivateHosts: true})
 		if err != nil {
 			t.Fatalf("expected degraded nil error, got %v", err)
 		}
@@ -138,7 +138,7 @@ func TestFetchDegradesOnUnreachableRedirectLoopAndByteCap(t *testing.T) {
 			fmt.Fprint(w, "<html><body>"+strings.Repeat("large ", 100)+"</body></html>")
 		}))
 		defer server.Close()
-		evidence, err := Fetch(context.Background(), server.URL, Options{HTTPClient: server.Client(), MaxBytes: 20, Timeout: time.Second, PageTimeout: time.Second})
+		evidence, err := Fetch(context.Background(), server.URL, Options{HTTPClient: server.Client(), MaxBytes: 20, Timeout: time.Second, PageTimeout: time.Second, AllowPrivateHosts: true})
 		if err != nil {
 			t.Fatalf("expected degraded nil error, got %v", err)
 		}
@@ -158,7 +158,7 @@ func TestFetchDegradesOnUnreachableRedirectLoopAndByteCap(t *testing.T) {
 			fmt.Fprint(w, "<html><body>"+strings.Repeat("large ", 100)+"</body></html>")
 		}))
 		defer server.Close()
-		evidence, err := Fetch(context.Background(), server.URL, Options{HTTPClient: server.Client(), MaxBytes: 80, Timeout: time.Second, PageTimeout: time.Second})
+		evidence, err := Fetch(context.Background(), server.URL, Options{HTTPClient: server.Client(), MaxBytes: 80, Timeout: time.Second, PageTimeout: time.Second, AllowPrivateHosts: true})
 		if err != nil {
 			t.Fatalf("expected degraded nil error, got %v", err)
 		}
@@ -179,10 +179,11 @@ func TestFetchCapsPagesAndUsesOnlyAllowList(t *testing.T) {
 	defer server.Close()
 
 	evidence, err := Fetch(context.Background(), server.URL, Options{
-		HTTPClient:  server.Client(),
-		MaxPages:    2,
-		Timeout:     time.Second,
-		PageTimeout: time.Second,
+		HTTPClient:        server.Client(),
+		MaxPages:          2,
+		Timeout:           time.Second,
+		PageTimeout:       time.Second,
+		AllowPrivateHosts: true,
 	})
 	if err != nil {
 		t.Fatalf("Fetch: %v", err)
@@ -210,10 +211,11 @@ func TestFetchIgnoresConfiguredPathsOutsideFixedAllowList(t *testing.T) {
 	defer server.Close()
 
 	evidence, err := Fetch(context.Background(), server.URL, Options{
-		HTTPClient:  server.Client(),
-		Paths:       []string{"/secret", "/projects", "/curr%C3%ADculo"},
-		Timeout:     time.Second,
-		PageTimeout: time.Second,
+		HTTPClient:        server.Client(),
+		Paths:             []string{"/secret", "/projects", "/curr%C3%ADculo"},
+		Timeout:           time.Second,
+		PageTimeout:       time.Second,
+		AllowPrivateHosts: true,
 	})
 	if err != nil {
 		t.Fatalf("Fetch: %v", err)
@@ -251,6 +253,73 @@ func TestFetchNoLiveNetworkGuard(t *testing.T) {
 	}
 }
 
+func TestFetchRejectsPrivateNetworkTargetsBeforeRequest(t *testing.T) {
+	t.Parallel()
+	for _, rawURL := range []string{
+		"http://127.0.0.1",
+		"http://[::1]",
+		"http://10.0.0.1",
+		"http://172.16.0.1",
+		"http://192.168.1.1",
+		"http://169.254.169.254/latest/meta-data",
+		"http://0.0.0.0",
+	} {
+		rawURL := rawURL
+		t.Run(rawURL, func(t *testing.T) {
+			t.Parallel()
+			transport := &countingTransport{}
+			evidence, err := Fetch(context.Background(), rawURL, Options{
+				HTTPClient: &http.Client{Transport: transport},
+			})
+			if err != nil {
+				t.Fatalf("expected safe degradation, got %v", err)
+			}
+			if !evidence.Degraded {
+				t.Fatalf("expected private target %q to degrade", rawURL)
+			}
+			if transport.count != 0 {
+				t.Fatalf("private target %q reached HTTP transport %d time(s)", rawURL, transport.count)
+			}
+		})
+	}
+}
+
+func TestFetchRejectsRedirectToPrivateNetwork(t *testing.T) {
+	t.Parallel()
+	var requests int
+	client := &http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			requests++
+			if req.URL.Hostname() != "93.184.216.34" {
+				t.Fatalf("redirect reached private target transport: %s", req.URL)
+			}
+			return &http.Response{
+				StatusCode: http.StatusFound,
+				Header: http.Header{
+					"Location": []string{"http://169.254.169.254/latest/meta-data"},
+				},
+				Body:    http.NoBody,
+				Request: req,
+			}, nil
+		}),
+	}
+
+	evidence, err := Fetch(context.Background(), "http://93.184.216.34", Options{
+		HTTPClient: client,
+		Paths:      []string{"/"},
+		MaxPages:   1,
+	})
+	if err != nil {
+		t.Fatalf("expected safe degradation, got %v", err)
+	}
+	if !evidence.Degraded {
+		t.Fatal("expected redirect to private target to degrade")
+	}
+	if requests != 1 {
+		t.Fatalf("expected only the public request, got %d requests", requests)
+	}
+}
+
 type safeSeen struct {
 	mu    sync.Mutex
 	paths []string
@@ -271,6 +340,21 @@ func (s *safeSeen) has(path string) bool {
 		}
 	}
 	return false
+}
+
+type countingTransport struct {
+	count int
+}
+
+func (c *countingTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	c.count++
+	return nil, fmt.Errorf("unexpected request")
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
 }
 
 type forbiddenTransport struct {

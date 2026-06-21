@@ -43,6 +43,21 @@ func TestExtractRejectsOversizedPDF(t *testing.T) {
 	}
 }
 
+func TestExtractDefaultSizeLimitMatchesTenMegabyteProductContract(t *testing.T) {
+	t.Parallel()
+
+	withinLimit := make([]byte, 6<<20)
+	copy(withinLimit, []byte("%PDF-1.4\nmalformed but within the product size limit"))
+	if _, err := Extract(context.Background(), withinLimit, Options{Timeout: time.Second}); errors.Is(err, ErrSizeLimit) {
+		t.Fatalf("6 MB input must not hit the default size limit: %v", err)
+	}
+
+	overLimit := make([]byte, (10<<20)+1)
+	if _, err := Extract(context.Background(), overLimit, Options{Timeout: time.Second}); !errors.Is(err, ErrSizeLimit) {
+		t.Fatalf("expected 10 MB + 1 byte to hit the default size limit, got %v", err)
+	}
+}
+
 func TestExtractRejectsPageCap(t *testing.T) {
 	t.Parallel()
 	data := readFixture(t, "two_pages.pdf")
