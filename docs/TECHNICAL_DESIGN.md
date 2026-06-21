@@ -193,7 +193,7 @@ Limits:
 
 Document parsing:
 
-- use open-source parsing, preferably Docling;
+- use Go-native open-source PDF text extraction per [ADR 0017](adr/0017-go-native-pdf-extraction.md);
 - OCR disabled by default;
 - timeout required;
 - clear error if parsing fails;
@@ -441,7 +441,5 @@ These are implementation details to settle during build:
 
 - exact Gemini model names;
 - ADK accepted or rejected after spike;
-- exact Docling invocation strategy;
 - source file selection heuristics for GitHub code sampling;
 - AWS ECS Express Mode availability in the account.
-
