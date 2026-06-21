@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	defaultMaxBytes = 5 << 20
+	defaultMaxBytes = 10 << 20
 	defaultMaxPages = 20
 	defaultTimeout  = 5 * time.Second
 )
