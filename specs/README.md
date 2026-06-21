@@ -29,5 +29,6 @@ A spec defines **behavior**, not decisions. It is the precondition for coding it
 | 007 | [GitHub-lite evidence ingestion](007-github-lite-evidence.md) | 3a | Implemented |
 | 008 | [PDF text extraction](008-pdf-text-extraction.md) | 3b | Implemented |
 | 009 | [Portfolio mini-crawler](009-portfolio-mini-crawler.md) | 3c | Implemented |
+| 010 | [Tier 3 ingestion pipeline wiring](010-tier3-ingestion-pipeline-wiring.md) | 3 integration | Ready |
 
-Specs 001–005 cover the Tier 1 mock-mode floor ([EXECUTION_PLAN](../docs/EXECUTION_PLAN.md)). Spec 006 covers Tier 2 (real Gemini behind `LLMClient`). Specs 007–009 implement the Tier 3 evidence-ingestion packages: GitHub-lite, Go-native PDF text extraction, and the portfolio mini-crawler. Pipeline/API wiring remains a separate orchestrator-owned integration step.
+Specs 001–005 cover the Tier 1 mock-mode floor ([EXECUTION_PLAN](../docs/EXECUTION_PLAN.md)). Spec 006 covers Tier 2 (real Gemini behind `LLMClient`). Specs 007–009 implement the Tier 3 evidence-ingestion packages: GitHub-lite, Go-native PDF text extraction, and the portfolio mini-crawler. Spec 010 wires the GitHub/portfolio ingestion packages into the real Gemini pipeline; PDF upload/API wiring remains a separate slice.
