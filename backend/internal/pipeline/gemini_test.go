@@ -10,15 +10,19 @@ import (
 
 	"github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/contract"
 	"github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/eval"
+	ingestgithub "github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/ingest/github"
+	ingestportfolio "github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/ingest/portfolio"
 )
 
 // fakeLLMClient implements LLMClient for offline testing.
 type fakeLLMClient struct {
 	responses map[string]string
 	fallback  string
+	prompts   []string
 }
 
 func (f *fakeLLMClient) Generate(_ context.Context, prompt string) (string, error) {
+	f.prompts = append(f.prompts, prompt)
 	// Iterate keys in sorted order so a prompt that happens to match more than
 	// one key resolves deterministically (no reliance on map iteration order).
 	keys := make([]string, 0, len(f.responses))
@@ -37,6 +41,24 @@ func (f *fakeLLMClient) Generate(_ context.Context, prompt string) (string, erro
 	return "", fmt.Errorf("fakeLLMClient: no response matched prompt %q", prompt)
 }
 
+func (f *fakeLLMClient) promptContaining(substr string) string {
+	for _, prompt := range f.prompts {
+		if strings.Contains(prompt, substr) {
+			return prompt
+		}
+	}
+	return ""
+}
+
+func (f *fakeLLMClient) assertPromptMissing(t *testing.T, substr string) {
+	t.Helper()
+	for _, prompt := range f.prompts {
+		if strings.Contains(prompt, substr) {
+			t.Fatalf("prompt leaked sensitive value %q", substr)
+		}
+	}
+}
+
 // sampleFakeResponses returns mock JSON responses representing clean Gemini outputs
 // that match the contract schemas expected by each stage.
 func sampleFakeResponses() map[string]string {
@@ -50,6 +72,37 @@ func sampleFakeResponses() map[string]string {
 	}
 }
 
+func newOfflineGeminiPipeline(fastClient, strongClient LLMClient) *GeminiPipeline {
+	return NewGeminiPipelineWithIngestion(fastClient, strongClient, GeminiIngestionOptions{
+		GitHubFetch: func(context.Context, string, string) (ingestgithub.Evidence, error) {
+			return ingestgithub.Evidence{
+				Sources: []contract.Source{
+					{Kind: contract.SourceGitHub, Detail: "Repository example/demo shows languages: React and TypeScript."},
+				},
+				Summary: ingestgithub.Summary{
+					Owner:              "example",
+					Languages:          []string{"React", "TypeScript"},
+					HasReadme:          true,
+					GitHubLinksChecked: []string{"https://github.com/example"},
+				},
+			}, nil
+		},
+		PortfolioFetch: func(context.Context, string, ingestportfolio.Options) (ingestportfolio.Evidence, error) {
+			return ingestportfolio.Evidence{
+				Sources: []contract.Source{
+					{Kind: contract.SourcePortfolio, Detail: "Portfolio path /projetos exposes visible project or profile text."},
+				},
+				Summary: ingestportfolio.Summary{
+					URL:            "https://candidate.example/",
+					PagesFetched:   []string{"/", "/projetos"},
+					VisibleText:    "Projetos with React and TypeScript.",
+					ProjectSignals: []string{"projeto"},
+				},
+			}, nil
+		},
+	})
+}
+
 // TestGeminiPipelineWithFakeClient tests AC1, AC2, and AC3.
 func TestGeminiPipelineWithFakeClient(t *testing.T) {
 	// Guard against network calls in test suite (AC4)
@@ -60,7 +113,7 @@ func TestGeminiPipelineWithFakeClient(t *testing.T) {
 	responses := sampleFakeResponses()
 	fastClient := &fakeLLMClient{responses: responses}
 	strongClient := &fakeLLMClient{responses: responses}
-	p := NewGeminiPipeline(fastClient, strongClient)
+	p := newOfflineGeminiPipeline(fastClient, strongClient)
 
 	var events []StageEvent
 	emit := func(e StageEvent) {
@@ -120,6 +173,170 @@ func TestGeminiPipelineWithFakeClient(t *testing.T) {
 	}
 }
 
+func TestGeminiPipelinePropagatesIngestedEvidenceToChecker(t *testing.T) {
+	orig := http.DefaultTransport
+	t.Cleanup(func() { http.DefaultTransport = orig })
+	http.DefaultTransport = forbiddenTransport{t}
+
+	responses := sampleFakeResponses()
+	fastClient := &fakeLLMClient{responses: responses}
+	strongClient := &fakeLLMClient{responses: responses}
+	const token = "ghp_test_secret_must_not_leak"
+	var githubCalled, portfolioCalled bool
+
+	p := NewGeminiPipelineWithIngestion(fastClient, strongClient, GeminiIngestionOptions{
+		GitHubToken: token,
+		GitHubFetch: func(_ context.Context, rawURL, gotToken string) (ingestgithub.Evidence, error) {
+			githubCalled = true
+			if rawURL != "https://github.com/example/demo" {
+				t.Fatalf("unexpected github URL: %q", rawURL)
+			}
+			if gotToken != token {
+				t.Fatalf("github token was not passed to fetcher")
+			}
+			return ingestgithub.Evidence{
+				Sources: []contract.Source{
+					{Kind: contract.SourceGitHub, Detail: "Repository example/demo shows languages: Go, TypeScript."},
+				},
+				Summary: ingestgithub.Summary{
+					Owner:              "example",
+					Languages:          []string{"Go", "TypeScript"},
+					HasCI:              true,
+					HasTests:           true,
+					GitHubLinksChecked: []string{"https://github.com/example/demo"},
+				},
+			}, nil
+		},
+		PortfolioFetch: func(_ context.Context, rawURL string, _ ingestportfolio.Options) (ingestportfolio.Evidence, error) {
+			portfolioCalled = true
+			if rawURL != "https://candidate.example" {
+				t.Fatalf("unexpected portfolio URL: %q", rawURL)
+			}
+			return ingestportfolio.Evidence{
+				Sources: []contract.Source{
+					{Kind: contract.SourcePortfolio, Detail: "Portfolio path /projetos exposes visible project or profile text."},
+				},
+				Summary: ingestportfolio.Summary{
+					URL:            "https://candidate.example/",
+					PagesFetched:   []string{"/", "/projetos"},
+					VisibleText:    "Projetos with Go and TypeScript.",
+					ProjectSignals: []string{"projeto"},
+				},
+			}, nil
+		},
+	})
+
+	years := 4
+	job := contract.JobInput{
+		Description:     "Full-stack role.",
+		Seniority:       contract.SeniorityMid,
+		YearsExperience: &years,
+		StackTags:       []string{"Go", "TypeScript"},
+		PrimaryStacks:   []string{"Go", "TypeScript"},
+	}
+	cand := contract.CandidateInput{
+		ResumeText:   "Experienced Go and TypeScript developer.",
+		GithubURL:    "https://github.com/example/demo",
+		PortfolioURL: "https://candidate.example",
+	}
+
+	report, err := p.Run(context.Background(), "analysis-ingestion", job, cand, nil)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+	if !githubCalled {
+		t.Fatal("expected GitHub fetcher to be called")
+	}
+	if !portfolioCalled {
+		t.Fatal("expected portfolio fetcher to be called")
+	}
+
+	evidencePrompt := strongClient.promptContaining("EvidenceCheckerAgent")
+	if evidencePrompt == "" {
+		t.Fatal("expected EvidenceCheckerAgent prompt to be sent")
+	}
+	for _, want := range []string{
+		"Repository example/demo shows languages: Go, TypeScript.",
+		"Portfolio path /projetos exposes visible project or profile text.",
+		`"PagesFetched": [`,
+		`"/projetos"`,
+	} {
+		if !strings.Contains(evidencePrompt, want) {
+			t.Errorf("EvidenceCheckerAgent prompt missing %q", want)
+		}
+	}
+	fastClient.assertPromptMissing(t, token)
+	strongClient.assertPromptMissing(t, token)
+
+	if violations := eval.Validate(report, job.Seniority); len(violations) > 0 {
+		t.Errorf("report failed policy validation: %v", violations)
+	}
+}
+
+func TestGeminiPipelineWarnsOnDegradedExternalEvidence(t *testing.T) {
+	orig := http.DefaultTransport
+	t.Cleanup(func() { http.DefaultTransport = orig })
+	http.DefaultTransport = forbiddenTransport{t}
+
+	responses := sampleFakeResponses()
+	fastClient := &fakeLLMClient{responses: responses}
+	strongClient := &fakeLLMClient{responses: responses}
+	p := NewGeminiPipelineWithIngestion(fastClient, strongClient, GeminiIngestionOptions{
+		GitHubFetch: func(context.Context, string, string) (ingestgithub.Evidence, error) {
+			return ingestgithub.Evidence{Degraded: true}, nil
+		},
+		PortfolioFetch: func(context.Context, string, ingestportfolio.Options) (ingestportfolio.Evidence, error) {
+			return ingestportfolio.Evidence{}, nil
+		},
+	})
+
+	var events []StageEvent
+	emit := func(e StageEvent) {
+		events = append(events, e)
+	}
+
+	years := 4
+	job := contract.JobInput{
+		Description:     "Backend role.",
+		Seniority:       contract.SeniorityMid,
+		YearsExperience: &years,
+		StackTags:       []string{"Go"},
+		PrimaryStacks:   []string{"Go"},
+	}
+	cand := contract.CandidateInput{
+		ResumeText: "Go developer.",
+		GithubURL:  "https://github.com/example",
+	}
+
+	report, err := p.Run(context.Background(), "analysis-degraded-ingestion", job, cand, emit)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	foundWarning := false
+	for _, ev := range events {
+		if ev.Stage == "github_evidence" && ev.Status == StageWarning {
+			foundWarning = true
+			break
+		}
+	}
+	if !foundWarning {
+		t.Fatal("expected github_evidence stage to complete with warning status")
+	}
+	if violations := eval.Validate(report, job.Seniority); len(violations) > 0 {
+		t.Errorf("report failed policy validation: %v", violations)
+	}
+	foundLimitationWarning := false
+	for _, note := range report.Limitations {
+		if strings.Contains(note, "conservative fallback") {
+			foundLimitationWarning = true
+		}
+	}
+	if !foundLimitationWarning {
+		t.Error("expected degraded ingestion to add generic fallback limitation")
+	}
+}
+
 // TestGeminiPipelineFallback tests AC5.
 func TestGeminiPipelineFallback(t *testing.T) {
 	// Guard against network calls
@@ -133,7 +350,7 @@ func TestGeminiPipelineFallback(t *testing.T) {
 
 	fastClient := &fakeLLMClient{responses: responses}
 	strongClient := &fakeLLMClient{responses: responses}
-	p := NewGeminiPipeline(fastClient, strongClient)
+	p := newOfflineGeminiPipeline(fastClient, strongClient)
 
 	var events []StageEvent
 	emit := func(e StageEvent) {

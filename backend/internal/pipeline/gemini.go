@@ -13,6 +13,8 @@ import (
 
 	"github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/contract"
 	"github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/eval"
+	ingestgithub "github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/ingest/github"
+	ingestportfolio "github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/ingest/portfolio"
 )
 
 //go:embed prompts/job_profile.txt
@@ -35,15 +37,51 @@ var analystReviewPrompt string
 
 // GeminiPipeline implements pipeline.Pipeline using Gemini LLM models.
 type GeminiPipeline struct {
-	fastClient   LLMClient
-	strongClient LLMClient
+	fastClient       LLMClient
+	strongClient     LLMClient
+	githubToken      string
+	githubFetch      GitHubEvidenceFetcher
+	portfolioFetch   PortfolioEvidenceFetcher
+	portfolioOptions ingestportfolio.Options
+}
+
+// GitHubEvidenceFetcher fetches bounded public GitHub evidence for the Gemini pipeline.
+type GitHubEvidenceFetcher func(context.Context, string, string) (ingestgithub.Evidence, error)
+
+// PortfolioEvidenceFetcher fetches bounded public portfolio evidence for the Gemini pipeline.
+type PortfolioEvidenceFetcher func(context.Context, string, ingestportfolio.Options) (ingestportfolio.Evidence, error)
+
+// GeminiIngestionOptions configures optional public-evidence ingestion.
+type GeminiIngestionOptions struct {
+	GitHubToken      string
+	GitHubFetch      GitHubEvidenceFetcher
+	PortfolioFetch   PortfolioEvidenceFetcher
+	PortfolioOptions ingestportfolio.Options
 }
 
 // NewGeminiPipeline returns a new GeminiPipeline.
 func NewGeminiPipeline(fastClient, strongClient LLMClient) *GeminiPipeline {
+	return NewGeminiPipelineWithIngestion(fastClient, strongClient, GeminiIngestionOptions{})
+}
+
+// NewGeminiPipelineWithIngestion returns a GeminiPipeline with injectable ingestion
+// dependencies for production configuration and offline tests.
+func NewGeminiPipelineWithIngestion(fastClient, strongClient LLMClient, opts GeminiIngestionOptions) *GeminiPipeline {
+	githubFetch := opts.GitHubFetch
+	if githubFetch == nil {
+		githubFetch = ingestgithub.Fetch
+	}
+	portfolioFetch := opts.PortfolioFetch
+	if portfolioFetch == nil {
+		portfolioFetch = ingestportfolio.Fetch
+	}
 	return &GeminiPipeline{
-		fastClient:   fastClient,
-		strongClient: strongClient,
+		fastClient:       fastClient,
+		strongClient:     strongClient,
+		githubToken:      opts.GitHubToken,
+		githubFetch:      githubFetch,
+		portfolioFetch:   portfolioFetch,
+		portfolioOptions: opts.PortfolioOptions,
 	}
 }
 
@@ -92,6 +130,18 @@ type analystReviewOut struct {
 	Limitations          []string         `json:"limitations"`
 }
 
+type externalEvidenceContext struct {
+	GitHub    externalEvidenceBlock `json:"github"`
+	Portfolio externalEvidenceBlock `json:"portfolio"`
+}
+
+type externalEvidenceBlock struct {
+	Provided bool              `json:"provided"`
+	Degraded bool              `json:"degraded"`
+	Sources  []contract.Source `json:"sources"`
+	Summary  any               `json:"summary,omitempty"`
+}
+
 // Run executes the 10 stages of the pipeline in order, calling Gemini for text-only stages
 // and falling back to deterministic mock structures on failure.
 func (gp *GeminiPipeline) Run(ctx context.Context, analysisID string, job contract.JobInput, cand contract.CandidateInput, emit EmitFunc) (contract.Report, error) {
@@ -105,6 +155,8 @@ func (gp *GeminiPipeline) Run(ctx context.Context, analysisID string, job contra
 	var matrix quadrantClassifierOut
 	var starQs starQuestionsOut
 	var review analystReviewOut
+	var githubEvidence ingestgithub.Evidence
+	var portfolioEvidence ingestportfolio.Evidence
 
 	forbiddenList := eval.ForbiddenVocabulary()
 	forbiddenStr := strings.Join(forbiddenList, ", ")
@@ -223,29 +275,32 @@ func (gp *GeminiPipeline) Run(ctx context.Context, analysisID string, job contra
 		return nil
 	})
 
-	// 3. github_evidence (mocked in Tier 2)
+	// 3. github_evidence
 	_ = runStage(3, "github_evidence", "Analyzing GitHub repositories", func() error {
-		time.Sleep(50 * time.Millisecond)
-		return nil
+		ev, err := gp.fetchGitHubEvidence(ctx, cand.GithubURL)
+		githubEvidence = ev
+		return err
 	})
 
-	// 4. portfolio_evidence (mocked in Tier 2)
+	// 4. portfolio_evidence
 	_ = runStage(4, "portfolio_evidence", "Reading portfolio signals", func() error {
-		time.Sleep(50 * time.Millisecond)
-		return nil
+		ev, err := gp.fetchPortfolioEvidence(ctx, cand.PortfolioURL)
+		portfolioEvidence = ev
+		return err
 	})
 
 	// 5. evidence_checker
 	_ = runStage(5, "evidence_checker", "Checking claims against evidence", func() error {
 		jobProfileJSON, _ := json.Marshal(jobProfile)
 		vars := map[string]interface{}{
-			"JobProfile":          string(jobProfileJSON),
-			"ResumeText":          cand.ResumeText,
-			"CandidateNotes":      cand.Notes,
-			"LinkedinText":        cand.LinkedinText,
-			"GithubURL":           cand.GithubURL,
-			"PortfolioURL":        cand.PortfolioURL,
-			"ForbiddenVocabulary": forbiddenStr,
+			"JobProfile":           string(jobProfileJSON),
+			"ResumeText":           cand.ResumeText,
+			"CandidateNotes":       cand.Notes,
+			"LinkedinText":         cand.LinkedinText,
+			"GithubURL":            cand.GithubURL,
+			"PortfolioURL":         cand.PortfolioURL,
+			"ExternalEvidenceJSON": buildExternalEvidenceJSON(cand, githubEvidence, portfolioEvidence),
+			"ForbiddenVocabulary":  forbiddenStr,
 		}
 		prompt, err := renderPrompt(evidenceCheckerPrompt, vars)
 		if err != nil {
@@ -425,6 +480,73 @@ func (gp *GeminiPipeline) Run(ctx context.Context, analysisID string, job contra
 	}
 
 	return report, nil
+}
+
+func (gp *GeminiPipeline) fetchGitHubEvidence(ctx context.Context, rawURL string) (ingestgithub.Evidence, error) {
+	if strings.TrimSpace(rawURL) == "" {
+		return ingestgithub.Evidence{}, nil
+	}
+	ev, err := gp.githubFetch(ctx, rawURL, gp.githubToken)
+	if err != nil {
+		ev.Degraded = true
+		return ev, fmt.Errorf("github evidence ingestion failed: %w", err)
+	}
+	if ev.Degraded {
+		return ev, fmt.Errorf("github evidence ingestion degraded")
+	}
+	if len(ev.Sources) == 0 {
+		ev.Degraded = true
+		return ev, fmt.Errorf("github evidence ingestion returned no public sources")
+	}
+	return ev, nil
+}
+
+func (gp *GeminiPipeline) fetchPortfolioEvidence(ctx context.Context, rawURL string) (ingestportfolio.Evidence, error) {
+	if strings.TrimSpace(rawURL) == "" {
+		return ingestportfolio.Evidence{}, nil
+	}
+	ev, err := gp.portfolioFetch(ctx, rawURL, gp.portfolioOptions)
+	if err != nil {
+		ev.Degraded = true
+		return ev, fmt.Errorf("portfolio evidence ingestion failed: %w", err)
+	}
+	if ev.Degraded {
+		return ev, fmt.Errorf("portfolio evidence ingestion degraded")
+	}
+	if len(ev.Sources) == 0 {
+		ev.Degraded = true
+		return ev, fmt.Errorf("portfolio evidence ingestion returned no public sources")
+	}
+	return ev, nil
+}
+
+func buildExternalEvidenceJSON(cand contract.CandidateInput, githubEvidence ingestgithub.Evidence, portfolioEvidence ingestportfolio.Evidence) string {
+	payload := externalEvidenceContext{
+		GitHub: externalEvidenceBlock{
+			Provided: strings.TrimSpace(cand.GithubURL) != "",
+			Degraded: githubEvidence.Degraded,
+			Sources:  nonNilSources(githubEvidence.Sources),
+			Summary:  githubEvidence.Summary,
+		},
+		Portfolio: externalEvidenceBlock{
+			Provided: strings.TrimSpace(cand.PortfolioURL) != "",
+			Degraded: portfolioEvidence.Degraded,
+			Sources:  nonNilSources(portfolioEvidence.Sources),
+			Summary:  portfolioEvidence.Summary,
+		},
+	}
+	b, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		return "{}"
+	}
+	return string(b)
+}
+
+func nonNilSources(sources []contract.Source) []contract.Source {
+	if sources == nil {
+		return []contract.Source{}
+	}
+	return sources
 }
 
 // Prompt template rendering helper

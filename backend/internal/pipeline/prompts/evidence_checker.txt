@@ -19,6 +19,9 @@ INPUTS:
 - Portfolio URL:
 {{.PortfolioURL}}
 
+- Public Evidence JSON from bounded ingestion:
+{{.ExternalEvidenceJSON}}
+
 POLICIES AND CONSTRAINTS:
 1. FORBIDDEN VOCABULARY:
 You MUST NOT use any of the following forbidden terms, or their direct synonyms, in any part of your output:
@@ -34,6 +37,8 @@ Strictly avoid any language referring to demographic characteristics such as age
 - Every checked skill that is "confirmed" or "plausible" MUST have at least one valid source in the sources array.
 - Available source kinds are: 'resume', 'github', 'linkedin', 'portfolio', 'job'. Do not invent other kinds.
 - Provide a clear, factual detail of what evidence was found in that source. Do not make unsubstantiated claims.
+- Prefer concrete GitHub and portfolio source details from the Public Evidence JSON when those sources are present and not degraded.
+- If public evidence is missing or degraded, treat that as an interview-validation item rather than a negative conclusion.
 
 5. CONSERVATIVE LANGUAGE:
 Use uncertainty-preserving language (e.g., "Resume claims experience with", "Public evidence suggests", "Not publicly evidenced in provided profiles"). Do not assume expertise that is not explicitly supported.
