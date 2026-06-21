@@ -455,7 +455,7 @@ The MVP must not:
 
 Document parsing must use a ready-made open-source solution. Preference:
 
-- Docling as the first option;
+- Go-native PDF text extraction as the first option (ADR 0017);
 - fallback to pasted/manual text;
 - OCR disabled by default;
 - size limit;
@@ -562,7 +562,7 @@ If ECS Express Mode is blocked by availability, use Render for the backend and d
 
 ## 22. Risks
 
-- Docling too heavy for a small container.
+- PDF extraction losing fidelity on complex layouts.
 - ECS Express Mode generating higher-than-expected cost.
 - LLM generating conclusions that are too strong.
 - GitHub API rate limit.
@@ -624,7 +624,7 @@ This project should be presented as proof of a way of working:
 ### Day 3
 
 - GitHub static analysis;
-- Docling/text fallback;
+- Go-native PDF/text fallback;
 - prompts/rubrics.
 
 ### Day 4
