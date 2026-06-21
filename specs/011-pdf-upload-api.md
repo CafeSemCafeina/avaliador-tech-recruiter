@@ -2,10 +2,10 @@
 
 - **Tier:** 3 integration
 - **Status:** Ready
-- **Related to:** PRD §11.1, §11.2, §16; TECHNICAL_DESIGN §5, §9, §16; ADR-0002; ADR-0017; EXECUTION_PLAN Tier 3b; EVALUATION L0/L2
+- **Related to:** PRD §8 Step 2, §11.2, §11.3, §13, §14, §16; TECHNICAL_DESIGN §3, §8, §9, §12, §14, §15; ADR-0002; ADR-0017; EXECUTION_PLAN Tier 3b; EVALUATION L0/L2
 - **Estimate:** M
 - **Owner engine:** codex
-- **Partition (paths this spec owns):** `backend/internal/api/server*.go`, `frontend/src/api.ts`, `frontend/src/screens.tsx`, `frontend/src/state.ts`, frontend tests/styles as needed, and this spec index. It consumes but does not redefine `backend/internal/ingest/pdf/`.
+- **Partition (paths this spec owns):** `backend/internal/api/server.go`, `backend/internal/api/server_test.go`, `frontend/src/api.ts`, `frontend/src/api.test.ts`, `frontend/src/screens.tsx`, `frontend/src/screens.test.tsx`, `frontend/src/state.ts`, `frontend/src/app.css`, `docs/PRD.md`, `docs/TECHNICAL_DESIGN.md`, `specs/011-pdf-upload-api.md`, and `specs/README.md`. It consumes but does not redefine `backend/internal/ingest/pdf/`.
 - **Depends on:** spec 001, spec 002, spec 008
 
 ## Objective
@@ -23,10 +23,10 @@ Expose the implemented Go-native PDF text extractor through the app so recruiter
 
 ## Technical context
 
-- Add a small backend endpoint, proposed as `POST /api/documents/extract-text`, that accepts `multipart/form-data` with:
+- Add the canonical backend endpoint `POST /api/documents/extract-text`, which accepts `multipart/form-data` with:
   - `file`: required PDF file.
   - `kind`: optional `resume` or `linkedin`, used only for UI/status copy and validation messages.
-- The endpoint calls `internal/ingest/pdf.Extract(ctx, data, opts)` with bounded size/page/timeout settings. It returns JSON:
+- The endpoint calls `internal/ingest/pdf.Extract(ctx, data, opts)` with the product bounds: 10 MB, 20 pages, and a 5-second extraction timeout. It returns JSON:
 
 ```json
 {

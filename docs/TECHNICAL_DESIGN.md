@@ -58,11 +58,25 @@ The UI will not expose a public toggle. This avoids confusing recruiters and kee
 
 ```text
 GET  /health
+POST /api/documents/extract-text
 POST /api/analyses
 GET  /api/analyses/{id}
 GET  /api/analyses/{id}/events
 GET  /api/analyses/{id}/export.md
 ```
+
+`POST /api/documents/extract-text` is a bounded synchronous preprocessing endpoint. It accepts `multipart/form-data` with a required `file` and optional `kind=resume|linkedin`, calls the Go-native PDF extractor, and returns:
+
+```json
+{
+  "text": "extracted text",
+  "pages": 2,
+  "hasText": true,
+  "warnings": []
+}
+```
+
+The endpoint does not create an analysis. PDF bytes and parser internals are never stored, logged, sent to an LLM, or included in a report/export.
 
 ### Job runner
 
@@ -187,6 +201,8 @@ The MVP supports real uploads from the first product version.
 Limits:
 
 - 10 MB max per file;
+- 20 pages max per PDF;
+- 5-second extraction timeout;
 - resume PDF/text;
 - LinkedIn PDF/text export;
 - fallback text paste for parsing failures.
@@ -198,6 +214,16 @@ Document parsing:
 - timeout required;
 - clear error if parsing fails;
 - manual text fallback remains available.
+
+Upload flow:
+
+1. The frontend sends one PDF to `POST /api/documents/extract-text`.
+2. The backend enforces multipart, content-type, size, page, and timeout bounds before returning extracted text.
+3. The frontend fills the existing resume or LinkedIn textarea without starting analysis automatically.
+4. The recruiter reviews or edits the text.
+5. The normal `POST /api/analyses` JSON request carries only `CandidateInput` text and URLs.
+
+Empty or scanned PDFs return `200 OK` with `hasText=false` and a user-safe warning. Missing, malformed, unsupported, or oversized input returns a bounded `4xx` response with field-level errors.
 
 ## 9. LinkedIn Input
 
@@ -339,6 +365,8 @@ These screens are converted into typed React components against the design-syste
 3. Analysis progress.
 4. Report.
 
+The candidate-input state includes PDF upload controls beside the resume and LinkedIn textareas. Upload success fills the matching textarea; upload warnings/errors are shown inline, and the user remains in control of the text submitted for analysis.
+
 ## 13. Dataset Strategy
 
 The repository includes a fictitious dataset for tests and demo safety.
@@ -355,6 +383,8 @@ Recommended split:
 
 The MVP processes uploaded files for the current analysis only.
 
+PDF bytes are held only for the synchronous extraction request and discarded after the response. They are not written to the in-memory analysis store or included in model prompts, reports, events, logs, or Markdown exports.
+
 No login, no multi-user account, and no durable database storage are planned for the first version.
 
 The product must display a short privacy warning before analysis starts.
@@ -364,6 +394,7 @@ The product must display a short privacy warning before analysis starts.
 Backend tests:
 
 - input validation;
+- PDF upload/extraction handler bounds and error mapping;
 - analysis creation;
 - lifecycle transitions;
 - SSE event history;
