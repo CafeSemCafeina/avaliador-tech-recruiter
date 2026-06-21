@@ -1,7 +1,7 @@
 # Spec 011: PDF upload API and UI fill-in
 
 - **Tier:** 3 integration
-- **Status:** Ready
+- **Status:** Implemented
 - **Related to:** PRD §8 Step 2, §11.2, §11.3, §13, §14, §16; TECHNICAL_DESIGN §3, §8, §9, §12, §14, §15; ADR-0002; ADR-0017; EXECUTION_PLAN Tier 3b; EVALUATION L0/L2
 - **Estimate:** M
 - **Owner engine:** codex

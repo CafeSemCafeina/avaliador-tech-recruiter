@@ -72,3 +72,42 @@ export async function fetchReport(id: string): Promise<Report> {
 export function exportUrl(id: string): string {
   return `${BASE}/api/analyses/${id}/export.md`;
 }
+
+export type DocumentKind = 'resume' | 'linkedin';
+
+export interface PdfExtraction {
+  text: string;
+  pages: number;
+  hasText: boolean;
+  warnings: string[];
+}
+
+/**
+ * Uploads a PDF and returns its extracted text. The bytes are never sent to the
+ * analysis pipeline — only the returned text fills the evidence textareas.
+ * Throws ValidationError on a bounded 4xx (too large, not a PDF, missing file).
+ */
+export async function extractPdfText(file: File, kind: DocumentKind): Promise<PdfExtraction> {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('kind', kind);
+  const res = await fetch(`${BASE}/api/documents/extract-text`, { method: 'POST', body: form });
+  if (res.status === 400 || res.status === 413) {
+    const body = (await res.json()) as { errors?: FieldErrors };
+    throw new ValidationError(body.errors ?? { file: 'could not process the PDF' });
+  }
+  if (!res.ok) throw new Error(`extract failed: ${res.status}`);
+  return (await res.json()) as PdfExtraction;
+}
+
+/**
+ * Fills an evidence textarea with extracted PDF text: appends (with a blank
+ * line) to existing content rather than overwriting what the user already typed.
+ */
+export function mergeExtractedText(existing: string, extracted: string): string {
+  const a = existing.trim();
+  const b = extracted.trim();
+  if (!a) return b;
+  if (!b) return a;
+  return `${a}\n\n${b}`;
+}
