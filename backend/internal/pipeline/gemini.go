@@ -5,6 +5,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -131,20 +132,54 @@ type analystReviewOut struct {
 }
 
 type externalEvidenceContext struct {
-	GitHub    externalEvidenceBlock `json:"github"`
-	Portfolio externalEvidenceBlock `json:"portfolio"`
+	GitHub    githubEvidencePrompt    `json:"github"`
+	Portfolio portfolioEvidencePrompt `json:"portfolio"`
 }
 
-type externalEvidenceBlock struct {
-	Provided bool              `json:"provided"`
-	Degraded bool              `json:"degraded"`
-	Sources  []contract.Source `json:"sources"`
-	Summary  any               `json:"summary,omitempty"`
+type githubEvidencePrompt struct {
+	Provided       bool                     `json:"provided"`
+	Degraded       bool                     `json:"degraded"`
+	Sources        []contract.Source        `json:"sources"`
+	Owner          string                   `json:"owner,omitempty"`
+	Repositories   []githubRepositoryPrompt `json:"repositories"`
+	Languages      []string                 `json:"languages"`
+	Manifests      []string                 `json:"manifests"`
+	HasReadme      bool                     `json:"hasReadme"`
+	HasCI          bool                     `json:"hasCI"`
+	HasTests       bool                     `json:"hasTests"`
+	HasDocker      bool                     `json:"hasDocker"`
+	RecentActivity bool                     `json:"recentActivity"`
+	LinksChecked   []string                 `json:"linksChecked"`
+}
+
+type githubRepositoryPrompt struct {
+	FullName       string   `json:"fullName"`
+	Languages      []string `json:"languages"`
+	Manifests      []string `json:"manifests"`
+	HasReadme      bool     `json:"hasReadme"`
+	HasCI          bool     `json:"hasCI"`
+	HasTests       bool     `json:"hasTests"`
+	HasDocker      bool     `json:"hasDocker"`
+	RecentActivity bool     `json:"recentActivity"`
+}
+
+type portfolioEvidencePrompt struct {
+	Provided       bool              `json:"provided"`
+	Degraded       bool              `json:"degraded"`
+	Sources        []contract.Source `json:"sources"`
+	URL            string            `json:"url,omitempty"`
+	PagesFetched   []string          `json:"pagesFetched"`
+	GitHubLinks    []string          `json:"githubLinks"`
+	ProjectSignals []string          `json:"projectSignals"`
 }
 
 // Run executes the 10 stages of the pipeline in order, calling Gemini for text-only stages
 // and falling back to deterministic mock structures on failure.
 func (gp *GeminiPipeline) Run(ctx context.Context, analysisID string, job contract.JobInput, cand contract.CandidateInput, emit EmitFunc) (contract.Report, error) {
+	if gp == nil || gp.fastClient == nil || gp.strongClient == nil {
+		return contract.Report{}, errors.New("GeminiPipeline requires both fast and strong LLM clients")
+	}
+
 	methodology := make([]contract.MethodologyStep, 0, len(Stages))
 	degraded := false
 
@@ -179,6 +214,27 @@ func (gp *GeminiPipeline) Run(ctx context.Context, analysisID string, job contra
 
 		endTime := time.Now().UTC()
 		duration := endTime.Sub(startTime).Milliseconds()
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			if emit != nil {
+				emit(StageEvent{
+					AnalysisID: analysisID,
+					Stage:      stageID,
+					Name:       stageName,
+					Status:     StageFailed,
+					Message:    "cancelled",
+					Timestamp:  endTime,
+					DurationMs: duration,
+					Error:      ctxErr.Error(),
+				})
+			}
+			methodology = append(methodology, contract.MethodologyStep{
+				Stage:      stageID,
+				Name:       stageName,
+				Status:     string(StageFailed),
+				DurationMs: duration,
+			})
+			return ctxErr
+		}
 
 		status := StageCompleted
 		msg := stageName + " complete"
@@ -214,7 +270,7 @@ func (gp *GeminiPipeline) Run(ctx context.Context, analysisID string, job contra
 	}
 
 	// 0. parse_resume
-	_ = runStage(0, "parse_resume", "Parsing resume", func() error {
+	if err := runStage(0, "parse_resume", "Parsing resume", func() error {
 		vars := map[string]interface{}{
 			"ResumeText":          cand.ResumeText,
 			"CandidateNotes":      cand.Notes,
@@ -238,10 +294,12 @@ func (gp *GeminiPipeline) Run(ctx context.Context, analysisID string, job contra
 		}
 
 		return nil
-	})
+	}); err != nil {
+		return contract.Report{}, err
+	}
 
 	// 1. job_profile
-	_ = runStage(1, "job_profile", "Extracting role maturity profile", func() error {
+	if err := runStage(1, "job_profile", "Extracting role maturity profile", func() error {
 		vars := map[string]interface{}{
 			"JobDescription":      job.Description,
 			"Seniority":           string(job.Seniority),
@@ -267,30 +325,38 @@ func (gp *GeminiPipeline) Run(ctx context.Context, analysisID string, job contra
 		}
 
 		return nil
-	})
+	}); err != nil {
+		return contract.Report{}, err
+	}
 
 	// 2. linkedin_evidence (mocked in Tier 2)
-	_ = runStage(2, "linkedin_evidence", "Reading LinkedIn evidence", func() error {
+	if err := runStage(2, "linkedin_evidence", "Reading LinkedIn evidence", func() error {
 		time.Sleep(50 * time.Millisecond)
 		return nil
-	})
+	}); err != nil {
+		return contract.Report{}, err
+	}
 
 	// 3. github_evidence
-	_ = runStage(3, "github_evidence", "Analyzing GitHub repositories", func() error {
+	if err := runStage(3, "github_evidence", "Analyzing GitHub repositories", func() error {
 		ev, err := gp.fetchGitHubEvidence(ctx, cand.GithubURL)
 		githubEvidence = ev
 		return err
-	})
+	}); err != nil {
+		return contract.Report{}, err
+	}
 
 	// 4. portfolio_evidence
-	_ = runStage(4, "portfolio_evidence", "Reading portfolio signals", func() error {
+	if err := runStage(4, "portfolio_evidence", "Reading portfolio signals", func() error {
 		ev, err := gp.fetchPortfolioEvidence(ctx, cand.PortfolioURL)
 		portfolioEvidence = ev
 		return err
-	})
+	}); err != nil {
+		return contract.Report{}, err
+	}
 
 	// 5. evidence_checker
-	_ = runStage(5, "evidence_checker", "Checking claims against evidence", func() error {
+	if err := runStage(5, "evidence_checker", "Checking claims against evidence", func() error {
 		jobProfileJSON, _ := json.Marshal(jobProfile)
 		vars := map[string]interface{}{
 			"JobProfile":           string(jobProfileJSON),
@@ -318,12 +384,14 @@ func (gp *GeminiPipeline) Run(ctx context.Context, analysisID string, job contra
 			checkedSkills = fallbackEvidenceChecker(job, cand)
 			return fmt.Errorf("JSON parse error: %w (raw response: %s)", err, resp)
 		}
-
 		return nil
-	})
+	}); err != nil {
+		return contract.Report{}, err
+	}
+	sanitizeCheckedSkills(&checkedSkills, externalSourcesByKind(githubEvidence, portfolioEvidence))
 
 	// 6. evidence_matrix
-	_ = runStage(6, "evidence_matrix", "Building evidence matrix", func() error {
+	if err := runStage(6, "evidence_matrix", "Building evidence matrix", func() error {
 		checkedSkillsJSON, _ := json.Marshal(checkedSkills)
 		vars := map[string]interface{}{
 			"CheckedSkills":       string(checkedSkillsJSON),
@@ -345,12 +413,14 @@ func (gp *GeminiPipeline) Run(ctx context.Context, analysisID string, job contra
 			matrix = fallbackQuadrantClassifier(job, cand)
 			return fmt.Errorf("JSON parse error: %w (raw response: %s)", err, resp)
 		}
-
 		return nil
-	})
+	}); err != nil {
+		return contract.Report{}, err
+	}
+	sanitizeQuadrantClassifier(&matrix, externalSourcesByKind(githubEvidence, portfolioEvidence))
 
 	// 7. star_questions
-	_ = runStage(7, "star_questions", "Generating STAR questions", func() error {
+	if err := runStage(7, "star_questions", "Generating STAR questions", func() error {
 		jobProfileJSON, _ := json.Marshal(jobProfile)
 		matrixJSON, _ := json.Marshal(matrix)
 		vars := map[string]interface{}{
@@ -376,10 +446,12 @@ func (gp *GeminiPipeline) Run(ctx context.Context, analysisID string, job contra
 		}
 
 		return nil
-	})
+	}); err != nil {
+		return contract.Report{}, err
+	}
 
 	// 8. analyst_review
-	_ = runStage(8, "analyst_review", "Running analyst self-review", func() error {
+	if err := runStage(8, "analyst_review", "Running analyst self-review", func() error {
 		jobProfileJSON, _ := json.Marshal(jobProfile)
 		matrixJSON, _ := json.Marshal(matrix)
 		starQsJSON, _ := json.Marshal(starQs)
@@ -408,13 +480,17 @@ func (gp *GeminiPipeline) Run(ctx context.Context, analysisID string, job contra
 		}
 
 		return nil
-	})
+	}); err != nil {
+		return contract.Report{}, err
+	}
 
 	// 9. finalize
-	_ = runStage(9, "finalize", "Finalizing report", func() error {
+	if err := runStage(9, "finalize", "Finalizing report", func() error {
 		time.Sleep(50 * time.Millisecond)
 		return nil
-	})
+	}); err != nil {
+		return contract.Report{}, err
+	}
 
 	// Build the final report
 	finalLimitations := []string{
@@ -489,7 +565,7 @@ func (gp *GeminiPipeline) fetchGitHubEvidence(ctx context.Context, rawURL string
 	ev, err := gp.githubFetch(ctx, rawURL, gp.githubToken)
 	if err != nil {
 		ev.Degraded = true
-		return ev, fmt.Errorf("github evidence ingestion failed: %w", err)
+		return ev, errors.New("github evidence ingestion failed")
 	}
 	if ev.Degraded {
 		return ev, fmt.Errorf("github evidence ingestion degraded")
@@ -508,7 +584,7 @@ func (gp *GeminiPipeline) fetchPortfolioEvidence(ctx context.Context, rawURL str
 	ev, err := gp.portfolioFetch(ctx, rawURL, gp.portfolioOptions)
 	if err != nil {
 		ev.Degraded = true
-		return ev, fmt.Errorf("portfolio evidence ingestion failed: %w", err)
+		return ev, errors.New("portfolio evidence ingestion failed")
 	}
 	if ev.Degraded {
 		return ev, fmt.Errorf("portfolio evidence ingestion degraded")
@@ -522,17 +598,29 @@ func (gp *GeminiPipeline) fetchPortfolioEvidence(ctx context.Context, rawURL str
 
 func buildExternalEvidenceJSON(cand contract.CandidateInput, githubEvidence ingestgithub.Evidence, portfolioEvidence ingestportfolio.Evidence) string {
 	payload := externalEvidenceContext{
-		GitHub: externalEvidenceBlock{
-			Provided: strings.TrimSpace(cand.GithubURL) != "",
-			Degraded: githubEvidence.Degraded,
-			Sources:  nonNilSources(githubEvidence.Sources),
-			Summary:  githubEvidence.Summary,
+		GitHub: githubEvidencePrompt{
+			Provided:       strings.TrimSpace(cand.GithubURL) != "",
+			Degraded:       githubEvidence.Degraded,
+			Sources:        nonNilSources(githubEvidence.Sources),
+			Owner:          githubEvidence.Summary.Owner,
+			Repositories:   githubRepositoriesForPrompt(githubEvidence.Summary.Repositories),
+			Languages:      nonNilStrings(githubEvidence.Summary.Languages),
+			Manifests:      nonNilStrings(githubEvidence.Summary.Manifests),
+			HasReadme:      githubEvidence.Summary.HasReadme,
+			HasCI:          githubEvidence.Summary.HasCI,
+			HasTests:       githubEvidence.Summary.HasTests,
+			HasDocker:      githubEvidence.Summary.HasDocker,
+			RecentActivity: githubEvidence.Summary.RecentActivity,
+			LinksChecked:   nonNilStrings(githubEvidence.Summary.GitHubLinksChecked),
 		},
-		Portfolio: externalEvidenceBlock{
-			Provided: strings.TrimSpace(cand.PortfolioURL) != "",
-			Degraded: portfolioEvidence.Degraded,
-			Sources:  nonNilSources(portfolioEvidence.Sources),
-			Summary:  portfolioEvidence.Summary,
+		Portfolio: portfolioEvidencePrompt{
+			Provided:       strings.TrimSpace(cand.PortfolioURL) != "",
+			Degraded:       portfolioEvidence.Degraded,
+			Sources:        nonNilSources(portfolioEvidence.Sources),
+			URL:            portfolioEvidence.Summary.URL,
+			PagesFetched:   nonNilStrings(portfolioEvidence.Summary.PagesFetched),
+			GitHubLinks:    nonNilStrings(portfolioEvidence.Summary.GitHubLinks),
+			ProjectSignals: nonNilStrings(portfolioEvidence.Summary.ProjectSignals),
 		},
 	}
 	b, err := json.MarshalIndent(payload, "", "  ")
@@ -542,11 +630,175 @@ func buildExternalEvidenceJSON(cand contract.CandidateInput, githubEvidence inge
 	return string(b)
 }
 
+func githubRepositoriesForPrompt(repos []ingestgithub.RepositorySummary) []githubRepositoryPrompt {
+	out := make([]githubRepositoryPrompt, 0, len(repos))
+	for _, repo := range repos {
+		out = append(out, githubRepositoryPrompt{
+			FullName:       repo.FullName,
+			Languages:      nonNilStrings(repo.Languages),
+			Manifests:      nonNilStrings(repo.Manifests),
+			HasReadme:      repo.HasReadme,
+			HasCI:          repo.HasCI,
+			HasTests:       repo.HasTests,
+			HasDocker:      repo.HasDocker,
+			RecentActivity: repo.RecentActivity,
+		})
+	}
+	return out
+}
+
 func nonNilSources(sources []contract.Source) []contract.Source {
 	if sources == nil {
 		return []contract.Source{}
 	}
 	return sources
+}
+
+func nonNilStrings(values []string) []string {
+	if values == nil {
+		return []string{}
+	}
+	return values
+}
+
+func externalSourcesByKind(githubEvidence ingestgithub.Evidence, portfolioEvidence ingestportfolio.Evidence) map[contract.SourceKind][]contract.Source {
+	allowed := make(map[contract.SourceKind][]contract.Source, 2)
+	for _, source := range githubEvidence.Sources {
+		allowed[source.Kind] = appendUniqueSource(allowed[source.Kind], source)
+	}
+	for _, source := range portfolioEvidence.Sources {
+		allowed[source.Kind] = appendUniqueSource(allowed[source.Kind], source)
+	}
+	return allowed
+}
+
+func sanitizeCheckedSkills(out *evidenceCheckerOut, allowed map[contract.SourceKind][]contract.Source) {
+	for i := range out.CheckedSkills {
+		skill := &out.CheckedSkills[i]
+		filtered, _ := filterExternalSources(skill.Sources, allowed)
+		skill.Sources = filtered
+		switch skill.Status {
+		case "confirmed":
+			if hasPublicCorroboratingSource(filtered) {
+				continue
+			}
+			if len(filtered) > 0 {
+				skill.Status = "plausible"
+				skill.Rationale = "The provided candidate text references this skill, but public corroboration is unavailable; validate the claim in the interview."
+			} else {
+				skill.Status = "unverified"
+				skill.Rationale = "The claim is not corroborated by the available public evidence and should be validated in the interview."
+			}
+		case "plausible":
+			if len(filtered) == 0 {
+				skill.Status = "unverified"
+				skill.Rationale = "The claim is not corroborated by the available public evidence and should be validated in the interview."
+			}
+		}
+	}
+}
+
+func sanitizeQuadrantClassifier(out *quadrantClassifierOut, allowed map[contract.SourceKind][]contract.Source) {
+	for i := range out.EvidenceMatrix {
+		item := &out.EvidenceMatrix[i]
+		filtered, removedExternal := filterExternalSources(item.Sources, allowed)
+		item.Sources = filtered
+		if item.Quadrant.NeedsValidation() {
+			item.Sources = []contract.Source{}
+			continue
+		}
+		switch item.Quadrant {
+		case contract.QuadrantStrongWithEvidence:
+			if hasPublicCorroboratingSource(filtered) {
+				continue
+			}
+			item.Quadrant = contract.QuadrantStrongNeedsValidation
+			item.Sources = []contract.Source{}
+			item.Rationale = "Public corroboration is unavailable, so this claimed strength requires interview validation."
+		case contract.QuadrantWeakWithEvidence:
+			if removedExternal && len(filtered) == 0 {
+				item.Quadrant = contract.QuadrantWeakNeedsValidation
+				item.Sources = []contract.Source{}
+				item.Rationale = "The referenced public evidence was unavailable, so no gap can be concluded; validate this area in the interview."
+			}
+		}
+	}
+
+	var confirmedStrengths []contract.Finding
+	for _, finding := range out.ConfirmedStrengths {
+		filtered, _ := filterExternalSources(finding.Sources, allowed)
+		if !hasPublicCorroboratingSource(filtered) {
+			out.StrengthsNeedingValidation = append(out.StrengthsNeedingValidation, contract.ValidationItem{
+				Statement:      "A claimed strength requires validation because public corroboration is unavailable.",
+				InterviewFocus: "Ask the candidate for a concrete example and their specific contribution.",
+			})
+			continue
+		}
+		finding.Sources = filtered
+		confirmedStrengths = append(confirmedStrengths, finding)
+	}
+	out.ConfirmedStrengths = confirmedStrengths
+
+	var confirmedGaps []contract.Finding
+	for _, finding := range out.ConfirmedGaps {
+		filtered, removedExternal := filterExternalSources(finding.Sources, allowed)
+		if removedExternal && !hasPublicCorroboratingSource(filtered) {
+			out.WeakSignalsNeedingValidation = append(out.WeakSignalsNeedingValidation, contract.ValidationItem{
+				Statement:      "A possible weak signal requires validation because the referenced public evidence was unavailable.",
+				InterviewFocus: "Ask the candidate to describe their experience in this area before drawing a conclusion.",
+			})
+			continue
+		}
+		finding.Sources = filtered
+		confirmedGaps = append(confirmedGaps, finding)
+	}
+	out.ConfirmedGaps = confirmedGaps
+
+	for i := range out.StrengthsNeedingValidation {
+		out.StrengthsNeedingValidation[i].Sources, _ = filterExternalSources(out.StrengthsNeedingValidation[i].Sources, allowed)
+	}
+	for i := range out.WeakSignalsNeedingValidation {
+		out.WeakSignalsNeedingValidation[i].Sources, _ = filterExternalSources(out.WeakSignalsNeedingValidation[i].Sources, allowed)
+	}
+}
+
+func filterExternalSources(sources []contract.Source, allowed map[contract.SourceKind][]contract.Source) ([]contract.Source, bool) {
+	filtered := make([]contract.Source, 0, len(sources))
+	removedExternal := false
+	for _, source := range sources {
+		if source.Kind == contract.SourceGitHub || source.Kind == contract.SourcePortfolio {
+			canonical := allowed[source.Kind]
+			if len(canonical) == 0 {
+				removedExternal = true
+				continue
+			}
+			for _, actual := range canonical {
+				filtered = appendUniqueSource(filtered, actual)
+			}
+			continue
+		}
+		filtered = appendUniqueSource(filtered, source)
+	}
+	return filtered, removedExternal
+}
+
+func appendUniqueSource(sources []contract.Source, source contract.Source) []contract.Source {
+	for _, existing := range sources {
+		if existing.Kind == source.Kind && existing.Detail == source.Detail {
+			return sources
+		}
+	}
+	return append(sources, source)
+}
+
+func hasPublicCorroboratingSource(sources []contract.Source) bool {
+	for _, source := range sources {
+		switch source.Kind {
+		case contract.SourceGitHub, contract.SourcePortfolio, contract.SourceLinkedIn:
+			return true
+		}
+	}
+	return false
 }
 
 // Prompt template rendering helper
