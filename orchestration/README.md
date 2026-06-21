@@ -34,7 +34,7 @@ pwsh orchestration/dispatch.ps1 -Spec 007
 pwsh orchestration/dispatch.ps1 -Spec 007 -Engine codex -Run -Gate
 ```
 
-`dispatch.ps1` infers the engine from the spec's **Owner engine** line when `-Engine` is omitted. It refuses-with-warning to treat a `Draft` spec as implementable. Worktrees live in `../atr-worktrees/spec-<id>-<engine>` (outside the repo, so they never pollute the working tree).
+`dispatch.ps1` infers the engine from the spec's **Owner engine** line when `-Engine` is omitted. It refuses-with-warning to treat a `Draft` spec as implementable. Worktrees live in `.worktrees/spec-<id>-<engine>` on `<engine>/spec-<id>` branches (gitignored; ADR-0016).
 
 ### Parallel swarm
 
@@ -46,7 +46,7 @@ pwsh orchestration/swarm.ps1 -Specs 007,008,009
 pwsh orchestration/monitor.ps1 -Watch
 ```
 
-`swarm.ps1` sets up each worktree sequentially (avoids git-worktree lock races) then launches the engine runs in parallel as background processes, writing `../atr-worktrees/.logs/spec-<id>-<engine>.log` and a `swarm.json` state file that `monitor.ps1` reads. Each agent runs its own `gate.ps1` (unless `-NoGate`); the orchestrator merges only the GREEN worktrees. `-DryRun` sets up worktrees and the plan without launching.
+`swarm.ps1` sets up each worktree sequentially (avoids git-worktree lock races) then launches the engine runs in parallel as background processes, writing `.worktrees/.logs/spec-<id>-<engine>.log` and a `swarm.json` state file that `monitor.ps1` reads. Each agent runs its own `gate.ps1` (unless `-NoGate`); the orchestrator merges only the GREEN worktrees. `-DryRun` sets up worktrees and the plan without launching.
 
 This is the native-Windows alternative to tmux: real parallelism, persistent logs, and non-blocking monitoring without a Unix layer. (Interactive engines like gemini/agy must be authenticated to run headless; the swarm does not fake a TTY.)
 

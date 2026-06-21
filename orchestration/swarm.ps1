@@ -28,7 +28,7 @@ $Specs = @($Specs | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim(
 
 $repo = (& git rev-parse --show-toplevel).Trim()
 $disp = Join-Path $repo "orchestration/dispatch.ps1"
-$logDir = Join-Path (Split-Path $repo -Parent) "atr-worktrees/.logs"
+$logDir = Join-Path $repo ".worktrees/.logs"
 New-Item -ItemType Directory -Force $logDir | Out-Null
 
 Write-Host "== swarm: setting up $($Specs.Count) worktree(s) ==" -ForegroundColor Cyan

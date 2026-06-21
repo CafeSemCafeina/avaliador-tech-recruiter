@@ -65,7 +65,6 @@ The UI is built from the exported design system under `design/` (entry: `design/
 
 ## Conventions observed in this repo
 
-- **Commits:** Conventional Commits with scopes (`feat(core): ...`, `docs(adr): ...`). **Commit atomically** — every self-contained unit of work (one fix, one doc, one spec, one package) is its own commit; do not batch unrelated changes. Commit freely as work completes.
-- **Pushing to `main` requires explicit confirmation.** Never `git push` to `main` until the user confirms it. Commit as much as needed locally; when the tree is at a clean, push-worthy point, *ask* whether to push — don't wait silently.
+- **Git flow — `branch → PR`, always:** never commit directly to `main`, even for trivial changes. One branch per subject, type-prefixed (`docs/ fix/ feat/ chore/ refactor/`); the PR unit is **one cohesive, mergeable change** (cohesion, not size) — don't mix subjects. Conventional Commits with scopes, atomic. The eval gate is the merge filter. Agents don't push to `main` or self-merge without explicit confirmation. Full rules: [CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) ([ADR 0016](docs/adr/0016-git-flow-branch-pr-worktree.md)). Parallel agent work uses git worktrees under `.worktrees/` (orchestration layer).
 - **Decisions are recorded as ADRs** under `docs/adr/` (numbered, with Context / Decision / Alternatives / Consequences / Validation). When a decision changes or an ADR fallback is triggered, update the ADR rather than leaving it stale — the docs are kept in sync as a hard rule.
 - **No personal candidate data is ever committed.** Test fixtures are fictitious ([docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md) §13). Design/build exports are unpacked into the repo, not committed as `*.zip` (gitignored).

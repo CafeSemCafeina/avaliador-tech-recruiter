@@ -18,7 +18,7 @@ param(
 )
 
 $repo = (& git rev-parse --show-toplevel).Trim()
-$state = Join-Path (Split-Path $repo -Parent) "atr-worktrees/.logs/swarm.json"
+$state = Join-Path $repo ".worktrees/.logs/swarm.json"
 if (-not (Test-Path $state)) { Write-Host "no swarm state at $state — run swarm.ps1 first."; exit 1 }
 
 function Get-AgentStatus($a) {

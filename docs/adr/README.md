@@ -21,3 +21,4 @@ The goal is to make the reasoning visible: what we chose, what we rejected, why 
 - [ADR 0013 - Build with a hybrid orchestrator-plus-specialist agent workflow](0013-hybrid-orchestrator-specialist-agent-workflow.md)
 - [ADR 0014 - Add a spec layer as implementation contracts between decisions and code](0014-spec-layer-implementation-contracts.md)
 - [ADR 0015 - Agent orchestration tooling (worktree dispatch + eval gate)](0015-agent-orchestration-tooling.md)
+- [ADR 0016 - Git flow: branch → PR, cohesive units, worktree isolation](0016-git-flow-branch-pr-worktree.md)
