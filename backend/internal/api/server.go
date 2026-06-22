@@ -5,18 +5,30 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
 	"github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/contract"
 	"github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/eval"
 	"github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/export"
+	"github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/ingest/pdf"
 	"github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/pipeline"
 	"github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/store"
+)
+
+// PDF upload bounds (spec 011 / ADR-0017): 10 MB, 20 pages, 5s extraction.
+const (
+	maxUploadBytes = 10 << 20
+	maxUploadPages = 20
+	extractTimeout = 5 * time.Second
 )
 
 // Server wires the store and the analysis pipeline behind the HTTP handlers.
@@ -35,6 +47,7 @@ func (s *Server) Router() http.Handler {
 	r := chi.NewRouter()
 	r.Use(cors)
 	r.Get("/health", s.handleHealth)
+	r.Post("/api/documents/extract-text", s.handleExtractText)
 	r.Route("/api/analyses", func(r chi.Router) {
 		r.Post("/", s.handleCreate)
 		r.Get("/{id}", s.handleStatus)
@@ -218,6 +231,93 @@ func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(export.Render(*a.Report)))
+}
+
+// extractTextResponse is the small API view over a pdf.Result. PDF bytes never
+// enter the pipeline, store, export, or report — this endpoint only returns the
+// extracted text so the UI can fill the existing evidence textareas (spec 011).
+type extractTextResponse struct {
+	Text     string   `json:"text"`
+	Pages    int      `json:"pages"`
+	HasText  bool     `json:"hasText"`
+	Warnings []string `json:"warnings"`
+}
+
+// handleExtractText accepts a multipart PDF upload and returns its bounded plain
+// text. Errors are field-level JSON and never leak PDF bytes or parser internals.
+func (s *Server) handleExtractText(w http.ResponseWriter, r *http.Request) {
+	// Hard-bound the whole request body; allow a little overhead for multipart
+	// framing so a legitimately sized PDF is not rejected by the wrapper.
+	r.Body = http.MaxBytesReader(w, r.Body, maxUploadBytes+(1<<20))
+	if err := r.ParseMultipartForm(maxUploadBytes); err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			writeFieldError(w, http.StatusRequestEntityTooLarge, "file", "file exceeds the 10 MB limit")
+			return
+		}
+		writeFieldError(w, http.StatusBadRequest, "file", "could not read the upload")
+		return
+	}
+
+	if kind := strings.TrimSpace(r.FormValue("kind")); kind != "" && kind != "resume" && kind != "linkedin" {
+		writeFieldError(w, http.StatusBadRequest, "kind", "must be resume or linkedin")
+		return
+	}
+
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		writeFieldError(w, http.StatusBadRequest, "file", "a PDF file is required")
+		return
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(io.LimitReader(file, maxUploadBytes+1))
+	if err != nil {
+		writeFieldError(w, http.StatusBadRequest, "file", "could not read the upload")
+		return
+	}
+	if len(data) > maxUploadBytes {
+		writeFieldError(w, http.StatusRequestEntityTooLarge, "file", "file exceeds the 10 MB limit")
+		return
+	}
+	if !bytes.HasPrefix(data, []byte("%PDF-")) {
+		writeFieldError(w, http.StatusBadRequest, "file", "file must be a PDF")
+		return
+	}
+
+	result, err := pdf.Extract(r.Context(), data, pdf.Options{
+		MaxBytes: maxUploadBytes,
+		MaxPages: maxUploadPages,
+		Timeout:  extractTimeout,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, pdf.ErrSizeLimit):
+			writeFieldError(w, http.StatusRequestEntityTooLarge, "file", "file exceeds the 10 MB limit")
+		case errors.Is(err, pdf.ErrPageLimit):
+			writeFieldError(w, http.StatusBadRequest, "file", "PDF has too many pages (limit 20)")
+		default:
+			// Timeout or unexpected parser state: degrade safely — the paste
+			// path remains available.
+			writeFieldError(w, http.StatusBadRequest, "file", "could not extract text from this PDF; paste the text manually")
+		}
+		return
+	}
+
+	warnings := []string{}
+	if !result.HasText {
+		warnings = append(warnings, "No selectable text found in this PDF (it may be scanned or image-only). You can paste the text manually.")
+	}
+	writeJSON(w, http.StatusOK, extractTextResponse{
+		Text:     result.Text,
+		Pages:    result.Pages,
+		HasText:  result.HasText,
+		Warnings: warnings,
+	})
+}
+
+func writeFieldError(w http.ResponseWriter, status int, field, msg string) {
+	writeJSON(w, status, map[string]any{"errors": map[string]string{field: msg}})
 }
 
 func writeSSE(w http.ResponseWriter, ev pipeline.StageEvent) {

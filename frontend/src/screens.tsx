@@ -2,7 +2,8 @@
 // Report), rendered from reducer state and the structured Report JSON. Copy is
 // conservative and uncertainty-preserving; nothing here shows a score, ranking,
 // or verdict (ADR-0002).
-import type { Dispatch } from 'react';
+import { useState } from 'react';
+import type { ChangeEvent, Dispatch } from 'react';
 import type {
   CandidateInput,
   Finding,
@@ -17,8 +18,8 @@ import type {
 } from './types/contract';
 import { SENIORITIES } from './types/contract';
 import type { Action, AppState } from './state';
-import type { FieldErrors } from './api';
-import { exportUrl } from './api';
+import type { DocumentKind, FieldErrors } from './api';
+import { exportUrl, extractPdfText, mergeExtractedText, ValidationError } from './api';
 
 const STAGES: { id: string; name: string }[] = [
   { id: 'parse_resume', name: 'Parsing resume' },
@@ -154,6 +155,58 @@ export function JobScreen({
   );
 }
 
+// PdfUpload fills an evidence textarea from an uploaded PDF. The paste path
+// remains the fallback; copy stays conservative (no score/verdict wording).
+function PdfUpload({
+  kind,
+  label,
+  value,
+  onText,
+}: {
+  kind: DocumentKind;
+  label: string;
+  value: string;
+  onText: (text: string) => void;
+}) {
+  const [status, setStatus] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file
+    if (!file) return;
+    setError(null);
+    setStatus('Extracting text…');
+    try {
+      const res = await extractPdfText(file, kind);
+      if (res.hasText) {
+        onText(mergeExtractedText(value, res.text));
+        setStatus(`Filled from PDF (${res.pages} page${res.pages === 1 ? '' : 's'}). Review before running.`);
+      } else {
+        setStatus(res.warnings[0] ?? 'No selectable text found. Paste the text manually.');
+      }
+    } catch (err) {
+      setStatus(null);
+      setError(
+        err instanceof ValidationError
+          ? (Object.values(err.errors)[0] ?? 'Could not process the PDF.')
+          : 'Could not process the PDF. Paste the text manually.',
+      );
+    }
+  };
+
+  return (
+    <div className="upload">
+      <label className="upload-btn">
+        <input type="file" accept="application/pdf,.pdf" onChange={onFile} />
+        <span>Upload {label} PDF</span>
+      </label>
+      {status && <span className="upload-status muted">{status}</span>}
+      {error && <span className="field-error">{error}</span>}
+    </div>
+  );
+}
+
 export function CandidateScreen({
   state,
   dispatch,
@@ -179,10 +232,12 @@ export function CandidateScreen({
         <span>Resume text</span>
         <textarea rows={6} value={candidate.resumeText} onChange={(e) => set({ resumeText: e.target.value })} />
       </label>
+      <PdfUpload kind="resume" label="resume" value={candidate.resumeText} onText={(t) => set({ resumeText: t })} />
       <label className="field">
         <span>LinkedIn text (optional)</span>
         <textarea rows={3} value={candidate.linkedinText} onChange={(e) => set({ linkedinText: e.target.value })} />
       </label>
+      <PdfUpload kind="linkedin" label="LinkedIn" value={candidate.linkedinText} onText={(t) => set({ linkedinText: t })} />
       <div className="row">
         <label className="field">
           <span>GitHub URL (optional)</span>

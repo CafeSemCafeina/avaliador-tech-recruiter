@@ -130,6 +130,36 @@ textarea {
   margin: var(--space-1) 0 0;
 }
 
+/* PDF upload control (spec 011) — sits beside the evidence textareas. */
+.upload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin: calc(var(--space-2) * -1) 0 var(--space-4);
+}
+.upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--text-secondary);
+  border: var(--border-width) dashed var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+.upload-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+.upload-btn input[type='file'] {
+  display: none;
+}
+.upload-status {
+  font-size: var(--text-sm, 0.875rem);
+}
+
 /* Progress stages */
 .stages {
   list-style: none;

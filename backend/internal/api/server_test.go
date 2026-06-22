@@ -5,8 +5,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -210,6 +212,151 @@ func TestUnknownID(t *testing.T) {
 		if resp.StatusCode != http.StatusNotFound {
 			t.Errorf("%s: expected 404, got %d", path, resp.StatusCode)
 		}
+	}
+}
+
+// --- spec 011: PDF upload / extract-text endpoint ---
+
+// multipartUpload builds a multipart/form-data body. An empty field skips the
+// file part; an empty kind skips the kind field.
+func multipartUpload(t *testing.T, field, filename string, data []byte, kind string) (*bytes.Buffer, string) {
+	t.Helper()
+	var buf bytes.Buffer
+	mw := multipart.NewWriter(&buf)
+	if field != "" {
+		fw, err := mw.CreateFormFile(field, filename)
+		if err != nil {
+			t.Fatalf("CreateFormFile: %v", err)
+		}
+		if _, err := fw.Write(data); err != nil {
+			t.Fatalf("write file part: %v", err)
+		}
+	}
+	if kind != "" {
+		if err := mw.WriteField("kind", kind); err != nil {
+			t.Fatalf("write kind: %v", err)
+		}
+	}
+	if err := mw.Close(); err != nil {
+		t.Fatalf("close writer: %v", err)
+	}
+	return &buf, mw.FormDataContentType()
+}
+
+func postUpload(t *testing.T, ts *httptest.Server, field, filename string, data []byte, kind string) *http.Response {
+	t.Helper()
+	body, ct := multipartUpload(t, field, filename, data, kind)
+	resp, err := http.Post(ts.URL+"/api/documents/extract-text", ct, body)
+	if err != nil {
+		t.Fatalf("POST upload: %v", err)
+	}
+	return resp
+}
+
+func readFixture(t *testing.T, name string) []byte {
+	t.Helper()
+	data, err := os.ReadFile("testdata/" + name)
+	if err != nil {
+		t.Fatalf("read fixture %s: %v", name, err)
+	}
+	return data
+}
+
+type extractResp struct {
+	Text     string   `json:"text"`
+	Pages    int      `json:"pages"`
+	HasText  bool     `json:"hasText"`
+	Warnings []string `json:"warnings"`
+}
+
+// AC1: a text-based PDF returns 200 with text, page count, and hasText=true.
+func TestExtractTextFromTextPDF(t *testing.T) {
+	ts := httptest.NewServer(New(pipeline.NewMock()).Router())
+	defer ts.Close()
+
+	resp := postUpload(t, ts, "file", "resume.pdf", readFixture(t, "resume_text.pdf"), "resume")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+	var out extractResp
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	if !out.HasText || strings.TrimSpace(out.Text) == "" {
+		t.Fatalf("expected extracted text, got %+v", out)
+	}
+	if out.Pages < 1 {
+		t.Fatalf("expected >=1 page, got %d", out.Pages)
+	}
+	if len(out.Warnings) != 0 {
+		t.Fatalf("expected no warnings, got %v", out.Warnings)
+	}
+}
+
+// AC2: a no-text PDF returns 200, hasText=false, and a user-safe warning.
+func TestExtractTextNoText(t *testing.T) {
+	ts := httptest.NewServer(New(pipeline.NewMock()).Router())
+	defer ts.Close()
+
+	resp := postUpload(t, ts, "file", "scan.pdf", readFixture(t, "empty_page.pdf"), "")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d", resp.StatusCode)
+	}
+	var out extractResp
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	if out.HasText {
+		t.Fatalf("expected hasText=false, got %+v", out)
+	}
+	if len(out.Warnings) == 0 {
+		t.Fatal("expected a warning for the no-text PDF")
+	}
+}
+
+// AC3: missing file, non-PDF content, and invalid kind each return a bounded 4xx.
+func TestExtractTextBadRequests(t *testing.T) {
+	ts := httptest.NewServer(New(pipeline.NewMock()).Router())
+	defer ts.Close()
+
+	cases := []struct {
+		name     string
+		field    string
+		data     []byte
+		kind     string
+		wantCode int
+	}{
+		{"missing file", "", nil, "resume", http.StatusBadRequest},
+		{"non-pdf bytes", "file", []byte("this is not a pdf"), "resume", http.StatusBadRequest},
+		{"invalid kind", "file", []byte("%PDF-1.4 minimal"), "spreadsheet", http.StatusBadRequest},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			resp := postUpload(t, ts, tc.field, "x.pdf", tc.data, tc.kind)
+			if resp.StatusCode != tc.wantCode {
+				t.Fatalf("expected %d, got %d", tc.wantCode, resp.StatusCode)
+			}
+			var body map[string]any
+			if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+				t.Fatalf("decode error body: %v", err)
+			}
+			if _, ok := body["errors"]; !ok {
+				t.Fatalf("expected field-level errors, got %v", body)
+			}
+		})
+	}
+}
+
+// AC3: an oversized upload returns 413 and does not panic.
+func TestExtractTextOversized(t *testing.T) {
+	ts := httptest.NewServer(New(pipeline.NewMock()).Router())
+	defer ts.Close()
+
+	big := make([]byte, (10<<20)+(2<<20)) // 12 MB
+	copy(big, []byte("%PDF-1.4"))
+	resp := postUpload(t, ts, "file", "big.pdf", big, "resume")
+	if resp.StatusCode != http.StatusRequestEntityTooLarge {
+		t.Fatalf("expected 413, got %d", resp.StatusCode)
 	}
 }
 
