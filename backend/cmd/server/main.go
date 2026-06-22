@@ -10,7 +10,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/api"
 	"github.com/CafeSemCafeina/avaliador-tech-recruiter/backend/internal/llm"
@@ -34,6 +36,7 @@ func main() {
 			APIKey:    os.Getenv("GOOGLE_API_KEY"),
 			Project:   os.Getenv("GOOGLE_CLOUD_PROJECT"),
 			Location:  os.Getenv("GOOGLE_CLOUD_LOCATION"),
+			Timeout:   time.Duration(getenvInt("GEMINI_CALL_TIMEOUT_MS", 90000)) * time.Millisecond,
 		}
 
 		backend := "Gemini Developer API (GOOGLE_API_KEY)"
@@ -58,6 +61,7 @@ func main() {
 
 		p = pipeline.NewGeminiPipelineWithIngestion(fastClient, strongClient, pipeline.GeminiIngestionOptions{
 			GitHubToken: os.Getenv("GITHUB_TOKEN"),
+			MatrixPause: time.Duration(getenvInt("GEMINI_MATRIX_PAUSE_MS", 15000)) * time.Millisecond,
 		})
 	default:
 		log.Printf("ANALYSIS_MODE=%q not available; falling back to mock", mode)
@@ -70,6 +74,18 @@ func main() {
 	if err := http.ListenAndServe(addr, srv.Router()); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func getenvInt(key string, def int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 0 {
+		return def
+	}
+	return n
 }
 
 func getenv(key, def string) string {

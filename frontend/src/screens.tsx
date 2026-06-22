@@ -20,6 +20,7 @@ import { SENIORITIES } from './types/contract';
 import type { Action, AppState } from './state';
 import type { DocumentKind, FieldErrors } from './api';
 import { exportUrl, extractPdfText, mergeExtractedText, ValidationError } from './api';
+import { formatStackTags, parseStackTagsInput } from './stackTags';
 
 const STAGES: { id: string; name: string }[] = [
   { id: 'parse_resume', name: 'Parsing resume' },
@@ -56,6 +57,7 @@ export function JobScreen({
   onContinue: () => void;
 }) {
   const { job, fieldErrors } = state;
+  const [stackTagsText, setStackTagsText] = useState(() => formatStackTags(job.stackTags));
   const set = (patch: Partial<JobInput>) => dispatch({ type: 'setJob', job: { ...job, ...patch } });
 
   const togglePrimary = (tag: string) => {
@@ -109,15 +111,17 @@ export function JobScreen({
       <label className="field">
         <span>Stack tags (comma separated)</span>
         <input
-          value={job.stackTags.join(', ')}
-          onChange={(e) =>
+          value={stackTagsText}
+          onChange={(e) => {
+            const nextText = e.target.value;
+            const stackTags = parseStackTagsInput(nextText);
+            setStackTagsText(nextText);
             set({
-              stackTags: e.target.value
-                .split(',')
-                .map((t) => t.trim())
-                .filter(Boolean),
-            })
-          }
+              stackTags,
+              primaryStacks: job.primaryStacks.filter((tag) => stackTags.includes(tag)),
+            });
+          }}
+          onBlur={() => setStackTagsText(formatStackTags(job.stackTags))}
           placeholder="React, TypeScript, Go"
         />
       </label>
