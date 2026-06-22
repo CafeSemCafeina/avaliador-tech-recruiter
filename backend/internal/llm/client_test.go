@@ -34,6 +34,23 @@ func TestBuildClientConfigVertexRequiresProject(t *testing.T) {
 	}
 }
 
+func TestBuildClientConfigVertexNoCredentialsJSONUsesADC(t *testing.T) {
+	cfg, err := buildClientConfig(Options{UseVertex: true, Project: "my-proj"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Credentials != nil {
+		t.Error("expected nil credentials (ADC fallback) when no CredentialsJSON is set")
+	}
+}
+
+func TestBuildClientConfigVertexInvalidCredentialsJSON(t *testing.T) {
+	_, err := buildClientConfig(Options{UseVertex: true, Project: "my-proj", CredentialsJSON: "{not valid json"})
+	if err == nil {
+		t.Error("expected error when CredentialsJSON is not valid JSON")
+	}
+}
+
 func TestBuildClientConfigDeveloperAPI(t *testing.T) {
 	cfg, err := buildClientConfig(Options{APIKey: "k"})
 	if err != nil {

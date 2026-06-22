@@ -12,8 +12,14 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/auth/credentials"
 	"google.golang.org/genai"
 )
+
+// vertexScope is the OAuth scope Vertex AI requires when credentials are built
+// explicitly from a service-account key (instead of detected from the
+// environment).
+const vertexScope = "https://www.googleapis.com/auth/cloud-platform"
 
 // Options configures a Gemini client.
 type Options struct {
@@ -23,8 +29,14 @@ type Options struct {
 	APIKey    string // Developer API backend
 	Project   string // Vertex backend (GOOGLE_CLOUD_PROJECT)
 	Location  string // Vertex backend (GOOGLE_CLOUD_LOCATION); defaults to "global"
-	Model     string
-	Timeout   time.Duration
+	// CredentialsJSON is the service-account key as JSON *content* (not a file
+	// path). It lets the Vertex backend authenticate where the key arrives as an
+	// environment variable rather than a file on disk — e.g. an AWS ECS secret
+	// injected from Secrets Manager (ADR-0007). Empty falls back to Application
+	// Default Credentials (the local `gcloud auth application-default login`).
+	CredentialsJSON string
+	Model           string
+	Timeout         time.Duration
 }
 
 // Client wraps a genai client bound to a single model and implements
@@ -50,11 +62,25 @@ func buildClientConfig(opts Options) (*genai.ClientConfig, error) {
 		if location == "" {
 			location = "global"
 		}
-		return &genai.ClientConfig{
+		cfg := &genai.ClientConfig{
 			Backend:  genai.BackendVertexAI,
 			Project:  opts.Project,
 			Location: location,
-		}, nil
+		}
+		// When the service-account key is supplied as JSON content (an ECS
+		// secret env var, ADR-0007) rather than a file, build the credentials
+		// explicitly; otherwise leave them nil so the SDK uses ADC.
+		if strings.TrimSpace(opts.CredentialsJSON) != "" {
+			creds, err := credentials.DetectDefault(&credentials.DetectOptions{
+				CredentialsJSON: []byte(opts.CredentialsJSON),
+				Scopes:          []string{vertexScope},
+			})
+			if err != nil {
+				return nil, fmt.Errorf("llm: failed to parse vertex credentials JSON: %w", err)
+			}
+			cfg.Credentials = creds
+		}
+		return cfg, nil
 	}
 	if opts.APIKey == "" {
 		return nil, fmt.Errorf("llm: gemini developer backend requires GOOGLE_API_KEY")

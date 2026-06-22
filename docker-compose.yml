@@ -21,9 +21,10 @@ services:
       GOOGLE_GENAI_USE_VERTEXAI: "${GOOGLE_GENAI_USE_VERTEXAI:-true}"
       GOOGLE_CLOUD_PROJECT: "${GOOGLE_CLOUD_PROJECT:-}"
       GOOGLE_CLOUD_LOCATION: "${GOOGLE_CLOUD_LOCATION:-global}"
-      GOOGLE_API_KEY: "${GOOGLE_API_KEY:-}"
       GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
-      # Point ADC at the mounted service-account key (see volumes below).
+      # Vertex key as JSON content (mirrors the ECS secret). For local Vertex you
+      # can instead leave this empty and mount your ADC file (see volumes below).
+      GOOGLE_CREDENTIALS_JSON: "${GOOGLE_CREDENTIALS_JSON:-}"
       # GOOGLE_APPLICATION_CREDENTIALS: "/secrets/gcp-sa.json"
     # volumes:
     #   - ./backend/gcp-sa.json:/secrets/gcp-sa.json:ro
