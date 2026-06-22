@@ -44,7 +44,9 @@ jobs:
       - run: npm ci
       - name: typecheck
         run: npm run typecheck
-      - name: test (contract round-trip, policy guard)
+      - name: test (contract round-trip, policy guard, App render smoke)
         run: npm test
       - name: build
         run: npm run build
+      - name: verify build artifact (index.html references exist)
+        run: npm run verify:dist
