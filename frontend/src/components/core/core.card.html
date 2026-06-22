@@ -1,0 +1,55 @@
+<!-- @dsCard group="Components" viewport="700x320" name="Core — Buttons, Card, Avatar" subtitle="Action buttons, panels, identity" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style> body { margin:0; background:var(--bg-app); padding:22px; } </style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const { Button, Card, Avatar } = window.TechnicalMaturityAnalyzerDesignSystem_3be3ec;
+const Row = ({children}) => <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>{children}</div>;
+const Lbl = ({children}) => <div style={{fontFamily:"var(--font-mono)",fontSize:10,letterSpacing:"0.06em",textTransform:"uppercase",color:"var(--text-muted)",margin:"4px 0 2px"}}>{children}</div>;
+function Demo(){
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      <Lbl>Variants</Lbl>
+      <Row>
+        <Button variant="primary">Start analysis</Button>
+        <Button variant="accent">Continue</Button>
+        <Button variant="secondary">Add source</Button>
+        <Button variant="subtle">Skip</Button>
+        <Button variant="ghost">Cancel</Button>
+        <Button variant="danger-quiet">Remove</Button>
+      </Row>
+      <Lbl>Sizes &amp; states</Lbl>
+      <Row>
+        <Button size="sm" variant="secondary">Small</Button>
+        <Button size="md" variant="secondary">Medium</Button>
+        <Button size="lg" variant="primary">Large</Button>
+        <Button variant="accent" loading>Loading</Button>
+        <Button variant="secondary" disabled>Disabled</Button>
+      </Row>
+      <Lbl>Card &amp; Avatar</Lbl>
+      <Row>
+        <Card tone="default" style={{width:200}}>
+          <div style={{display:"flex",gap:10,alignItems:"center"}}>
+            <Avatar name="Marina Alvarez" size={36}/>
+            <div><div style={{fontSize:13,fontWeight:600}}>Marina Alvarez</div><div style={{fontSize:11,color:"var(--text-muted)"}}>Senior Frontend</div></div>
+          </div>
+        </Card>
+        <Card tone="sunken" style={{width:160,fontSize:13,color:"var(--text-secondary)"}}>Sunken panel</Card>
+      </Row>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo/>);
+</script>
+</body>
+</html>
