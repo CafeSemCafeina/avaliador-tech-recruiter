@@ -58,3 +58,9 @@ Negative:
 
 The backend must expose `/health`, run in Docker locally, and be deployable from an image. The frontend must use `VITE_API_BASE_URL` to call the backend. If ECS blocks progress, the fallback must be documented.
 
+## Implementation
+
+Dockerization landed in `backend/Dockerfile` (multi-stage, static binary on `distroless/static`, ~28 MB) and `frontend/Dockerfile` (Vite build → nginx; built from the repo root so it can reach `design/`). `docker-compose.yml` runs both locally for a smoke test, and [`scripts/push-backend.ps1`](../../scripts/push-backend.ps1) builds and pushes the backend image to ECR. The Amplify build spec is [`amplify.yml`](../../amplify.yml). The full runbook is [docs/DEPLOY.md](../DEPLOY.md).
+
+One deviation for the AWS path: running **Vertex AI from AWS** needs a GCP service-account key as a file (ADC), which is awkward on Fargate + a distroless image. So for the AWS deploy the **Gemini Developer API key** (`GOOGLE_API_KEY`, injected as an ECS secret) is the recommended `gemini` backend; Vertex remains the local/GCP path. Both are already supported by the `LLMClient` via `GOOGLE_GENAI_USE_VERTEXAI` ([ADR-0011](0011-use-gemini-and-spike-google-adk.md)), so no code change is required.
+
