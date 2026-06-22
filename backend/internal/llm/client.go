@@ -26,7 +26,7 @@ type Options struct {
 	// UseVertex selects the Vertex AI backend (ADC auth, billed to the GCP
 	// project). When false, the Gemini Developer API backend (API key) is used.
 	UseVertex bool
-	APIKey    string // Developer API backend
+	APIKey    string // Developer API or Vertex express mode
 	Project   string // Vertex backend (GOOGLE_CLOUD_PROJECT)
 	Location  string // Vertex backend (GOOGLE_CLOUD_LOCATION); defaults to "global"
 	// CredentialsJSON is the service-account key as JSON *content* (not a file
@@ -55,8 +55,14 @@ const defaultGenerateTimeout = 90 * time.Second
 // New so the backend-selection logic is unit-testable without a live client.
 func buildClientConfig(opts Options) (*genai.ClientConfig, error) {
 	if opts.UseVertex {
+		if strings.TrimSpace(opts.CredentialsJSON) == "" && opts.APIKey != "" {
+			return &genai.ClientConfig{
+				Backend: genai.BackendVertexAI,
+				APIKey:  opts.APIKey,
+			}, nil
+		}
 		if opts.Project == "" {
-			return nil, fmt.Errorf("llm: vertex backend requires GOOGLE_CLOUD_PROJECT")
+			return nil, fmt.Errorf("llm: vertex backend requires GOOGLE_CLOUD_PROJECT or GOOGLE_API_KEY")
 		}
 		location := opts.Location
 		if location == "" {
@@ -92,8 +98,8 @@ func buildClientConfig(opts Options) (*genai.ClientConfig, error) {
 }
 
 // New initializes a Gemini client for the given options. The Vertex backend
-// authenticates via Application Default Credentials (run
-// `gcloud auth application-default login`).
+// authenticates through an express-mode API key when APIKey is set, explicit
+// JSON credentials when CredentialsJSON is set, or ADC otherwise.
 func New(ctx context.Context, opts Options) (*Client, error) {
 	if opts.Model == "" {
 		return nil, fmt.Errorf("llm: model name is required")

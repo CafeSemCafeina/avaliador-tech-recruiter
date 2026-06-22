@@ -161,6 +161,8 @@ GEMINI_MODEL_STRONG=gemini-3.1-pro-preview
 PORT=8080
 ```
 
+For an external container, Vertex express mode can instead use a service-account-bound `GOOGLE_API_KEY` restricted to `aiplatform.googleapis.com`. In that mode, omit `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION`; see [docs/DEPLOY.md](docs/DEPLOY.md).
+
 **Gemini Developer API (API key).** Used only when `GOOGLE_GENAI_USE_VERTEXAI` is unset/false:
 ```env
 ANALYSIS_MODE=gemini

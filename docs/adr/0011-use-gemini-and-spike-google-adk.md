@@ -92,10 +92,9 @@ Tier 2 (spec 006) is implemented with the Gemini Go SDK (`google.golang.org/gena
 
 **Decision:** support **both** genai backends behind the same `LLMClient`, selectable by environment, and default this project to **Vertex AI**, because the Free Trial credit covers Vertex AI Gemini:
 
-- `GOOGLE_GENAI_USE_VERTEXAI=true` → Vertex AI backend, authenticated via Application Default Credentials (`gcloud auth application-default login`), billed to `GOOGLE_CLOUD_PROJECT` in `GOOGLE_CLOUD_LOCATION` (default `global`).
+- `GOOGLE_GENAI_USE_VERTEXAI=true` → Vertex AI backend, authenticated via an express-mode `GOOGLE_API_KEY`, explicit credentials JSON, or Application Default Credentials (`gcloud auth application-default login`). ADC is the local default; the AWS demo uses a service-account-bound API key restricted to `aiplatform.googleapis.com`.
 - unset/false → Gemini Developer API backend, authenticated via `GOOGLE_API_KEY`.
 
 Both paths produce identical behavior through the pipeline; only client construction differs (`internal/llm`). The two-tier model strategy and per-agent mock fallback are unchanged. This keeps the provider seam intact and lets the project run real reasoning on the credit that is actually available.
 
-**Consequences:** Vertex requires a GCP project + ADC (one-time `gcloud` login) rather than a single API key; the SDK and `LLMClient` contract are unchanged, so the rest of the system is unaffected.
-
+**Consequences:** local Vertex use requires a GCP project + ADC, while external demo hosting can use Vertex express mode with a restricted API key. The key path is simpler but remains a long-lived secret, so production workloads should prefer ADC or Workload Identity Federation.

@@ -62,30 +62,23 @@ docker push $REGISTRY/avaliador-backend:latest
 ## 2. The Vertex credential as a secret
 
 `ANALYSIS_MODE=gemini` runs on **Vertex AI**
-([ADR-0011](adr/0011-use-gemini-and-spike-google-adk.md)). Vertex normally
-authenticates via Application Default Credentials — a service-account **JSON
-file** at `GOOGLE_APPLICATION_CREDENTIALS`. ECS Fargate injects secrets as
-**environment variables**, not files, and the backend image is distroless (no
-shell to write the secret to disk). So the backend accepts the key as JSON
-*content* via `GOOGLE_CREDENTIALS_JSON` and builds the Vertex credentials from
-it (`backend/internal/llm/client.go`). When that var is empty it falls back to
-ADC, so the local `gcloud auth application-default login` flow is unchanged.
-
-Create the GCP service account (once, on GCP) with the
-`roles/aiplatform.user` role on project `rapid-rite-499807-d2`, download its
-JSON key, then store the key in Secrets Manager:
-
-```bash
-aws secretsmanager create-secret --name avaliador/gcp-sa-json \
-  --secret-string file://gcp-sa.json --region us-east-1
-```
+([ADR-0011](adr/0011-use-gemini-and-spike-google-adk.md)). The AWS demo uses
+Vertex express mode: a Google Cloud API key bound to a dedicated service
+account with `roles/aiplatform.user` and restricted to
+`aiplatform.googleapis.com`. Store the key in AWS Secrets Manager as
+`avaliador/vertex-api-key` and inject it as `GOOGLE_API_KEY`.
 
 Runtime env: `ANALYSIS_MODE=gemini`, `GOOGLE_GENAI_USE_VERTEXAI=true`,
-`GOOGLE_CLOUD_PROJECT=rapid-rite-499807-d2`, `GOOGLE_CLOUD_LOCATION=global`,
-and `GOOGLE_CREDENTIALS_JSON` sourced from the secret above.
+`GEMINI_MODEL_FAST=gemini-3.5-flash`,
+`GEMINI_MODEL_STRONG=gemini-3.1-pro-preview`, and `GOOGLE_API_KEY` sourced from
+the secret above. Omit `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION` in
+express mode because the SDK treats API-key and project/location initialization
+as mutually exclusive.
 
-> Never commit `gcp-sa.json` or bake it into the image — it is mounted only as a
-> runtime secret. The repo's `.dockerignore` already excludes `*sa*.json`.
+Local development still defaults to ADC with
+`gcloud auth application-default login`. `GOOGLE_CREDENTIALS_JSON` remains an
+optional compatibility path, but Workload Identity Federation is preferred to
+either long-lived secret for production.
 
 ## 3. Run the backend
 
@@ -110,8 +103,8 @@ aws apprunner create-service --cli-input-json file://apprunner-create.json --reg
 Key fields in the service config: `ImageConfiguration.Port = 8080`,
 `RuntimeEnvironmentVariables` (`ANALYSIS_MODE`, `PORT`, and the gemini vars from
 §2), `HealthCheckConfiguration.Path = /health`. For `ANALYSIS_MODE=gemini`,
-inject `GOOGLE_CREDENTIALS_JSON` via `RuntimeEnvironmentSecrets` pointing at the
-Secrets Manager secret, and give the service an **instance role**
+inject `GOOGLE_API_KEY` via `RuntimeEnvironmentSecrets` pointing at the Secrets
+Manager secret, and give the service an **instance role**
 (`InstanceConfiguration.InstanceRoleArn`) with `secretsmanager:GetSecretValue`.
 
 Poll `describe-service` until `Status = RUNNING`, then `curl https://<ServiceUrl>/health`.
@@ -134,12 +127,10 @@ run a service behind a public IP or ALB. Minimum task-definition essentials:
   - `ANALYSIS_MODE=gemini`
   - `PORT=8080`
   - `GOOGLE_GENAI_USE_VERTEXAI=true`
-  - `GOOGLE_CLOUD_PROJECT=rapid-rite-499807-d2`
-  - `GOOGLE_CLOUD_LOCATION=global`
   - `GEMINI_MODEL_FAST=gemini-3.5-flash`
   - `GEMINI_MODEL_STRONG=gemini-3.1-pro-preview`
 - **secrets** (injected from Secrets Manager):
-  - `GOOGLE_CREDENTIALS_JSON` → `avaliador/gcp-sa-json` (the Vertex key, §2)
+  - `GOOGLE_API_KEY` → `avaliador/vertex-api-key` (the Vertex key, §2)
   - `GITHUB_TOKEN` → optional, raises GitHub API rate limits
 
 The task's execution role needs `secretsmanager:GetSecretValue` for those ARNs
