@@ -87,16 +87,42 @@ and `GOOGLE_CREDENTIALS_JSON` sourced from the secret above.
 > Never commit `gcp-sa.json` or bake it into the image — it is mounted only as a
 > runtime secret. The repo's `.dockerignore` already excludes `*sa*.json`.
 
-## 3. Run the backend on ECS
+## 3. Run the backend
 
-### Option A — ECS Express Mode (simplest, ADR-0007 primary)
+### Option A — AWS App Runner (used in this deploy)
 
-If Express Mode is available in your region/console, point it at the pushed
-ECR image and set the environment variables below. It provisions the cluster,
-service, networking, and a public URL for you. Set `/health` as the health
-check path.
+App Runner runs the container straight from the ECR image and hands back a
+stable public HTTPS URL, with TLS, autoscaling, and `/health` checks managed
+for it. This is the path that was actually deployed (ADR-0007 records the
+deviation from ECS).
 
-### Option B — Fargate service (portable fallback)
+```powershell
+# 1. One-time IAM role so App Runner can pull from private ECR.
+aws iam create-role --role-name AppRunnerECRAccessRole `
+  --assume-role-policy-document file://apprunner-trust.json   # trusts build.apprunner.amazonaws.com
+aws iam attach-role-policy --role-name AppRunnerECRAccessRole `
+  --policy-arn arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
+
+# 2. Create the service (see scripts/apprunner-create.json for the full input).
+aws apprunner create-service --cli-input-json file://apprunner-create.json --region us-east-1
+```
+
+Key fields in the service config: `ImageConfiguration.Port = 8080`,
+`RuntimeEnvironmentVariables` (`ANALYSIS_MODE`, `PORT`, and the gemini vars from
+§2), `HealthCheckConfiguration.Path = /health`. For `ANALYSIS_MODE=gemini`,
+inject `GOOGLE_CREDENTIALS_JSON` via `RuntimeEnvironmentSecrets` pointing at the
+Secrets Manager secret, and give the service an **instance role**
+(`InstanceConfiguration.InstanceRoleArn`) with `secretsmanager:GetSecretValue`.
+
+Poll `describe-service` until `Status = RUNNING`, then `curl https://<ServiceUrl>/health`.
+
+### Option B — ECS Express Mode (ADR-0007 original)
+
+If you prefer ECS, point Express Mode at the pushed ECR image and set the same
+environment variables. It provisions the cluster, service, networking, and a
+public URL. Set `/health` as the health check path.
+
+### Option C — Fargate service (portable fallback)
 
 Create a CloudWatch log group, an ECS cluster, register a task definition, and
 run a service behind a public IP or ALB. Minimum task-definition essentials:
@@ -129,13 +155,33 @@ Note the backend's public URL — the frontend needs it next.
 
 ## 4. Deploy the frontend on Amplify
 
-1. Amplify console → **New app → Host web app** → connect this GitHub repo.
-2. Amplify auto-detects [`amplify.yml`](../amplify.yml) (appRoot `frontend`).
-3. App settings → **Environment variables** → add
-   `VITE_API_BASE_URL = http://<ecs-public-host>:8080` (the backend URL from §3).
-   Vite inlines this at build time, so set it **before** the build and redeploy
-   on change.
-4. Deploy. Amplify gives you the public frontend URL.
+Two ways. The **manual deploy** below is what this project used — it needs no
+GitHub OAuth and is fully CLI-scriptable.
+
+### Manual deploy (used)
+
+```powershell
+# Build locally with the backend URL baked in (Vite inlines it).
+$env:VITE_API_BASE_URL = "https://<app-runner-service-url>"
+cd frontend; npm run build
+
+$appId = (aws amplify create-app --name avaliador-frontend --query app.appId --output text)
+aws amplify create-branch --app-id $appId --branch-name main
+$dep = aws amplify create-deployment --app-id $appId --branch-name main | ConvertFrom-Json
+Compress-Archive -Path frontend/dist/* -DestinationPath dist.zip -Force
+Invoke-WebRequest -Uri $dep.zipUploadUrl -Method Put -InFile dist.zip -ContentType application/zip
+aws amplify start-deployment --app-id $appId --branch-name main --job-id $dep.jobId
+# Live at https://main.$appId.amplifyapp.com
+```
+
+Rebuild + redeploy whenever the backend URL changes (the URL is compiled in).
+
+### Git-connected deploy (CI on push)
+
+Alternatively, Amplify console → **New app → Host web app** → connect this
+GitHub repo; it auto-detects [`amplify.yml`](../amplify.yml) (appRoot
+`frontend`). Set `VITE_API_BASE_URL` under App settings → Environment variables
+**before** the build. This gives auto-deploy on every push.
 
 > CORS: the backend already sends `Access-Control-Allow-Origin: *`
 > (`backend/internal/api/server.go`), so the Amplify origin can call it directly.
@@ -149,9 +195,15 @@ in the Amplify console.
 ## 6. Cost control & cleanup
 
 - Create an **AWS Budgets** alert before leaving anything running.
-- Tear down when idle: delete the ECS service/cluster, the ALB if used, the
-  Amplify app, and old ECR images (or set an ECR lifecycle policy). Delete the
-  Secrets Manager secrets.
+- App Runner bills while the service exists (even idle). Pause or delete it when
+  not in use:
+  ```bash
+  aws apprunner pause-service  --service-arn <arn> --region us-east-1
+  aws apprunner delete-service --service-arn <arn> --region us-east-1
+  ```
+- Tear down the rest when idle: delete the Amplify app, old ECR images (or set an
+  ECR lifecycle policy), and any Secrets Manager secrets. If you used ECS instead,
+  delete the service/cluster and ALB.
 
 ## 7. Fallback
 
