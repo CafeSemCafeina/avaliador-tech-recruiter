@@ -12,19 +12,31 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/auth/credentials"
 	"google.golang.org/genai"
 )
+
+// vertexScope is the OAuth scope Vertex AI requires when credentials are built
+// explicitly from a service-account key (instead of detected from the
+// environment).
+const vertexScope = "https://www.googleapis.com/auth/cloud-platform"
 
 // Options configures a Gemini client.
 type Options struct {
 	// UseVertex selects the Vertex AI backend (ADC auth, billed to the GCP
 	// project). When false, the Gemini Developer API backend (API key) is used.
 	UseVertex bool
-	APIKey    string // Developer API backend
+	APIKey    string // Developer API or Vertex express mode
 	Project   string // Vertex backend (GOOGLE_CLOUD_PROJECT)
 	Location  string // Vertex backend (GOOGLE_CLOUD_LOCATION); defaults to "global"
-	Model     string
-	Timeout   time.Duration
+	// CredentialsJSON is the service-account key as JSON *content* (not a file
+	// path). It lets the Vertex backend authenticate where the key arrives as an
+	// environment variable rather than a file on disk — e.g. an AWS ECS secret
+	// injected from Secrets Manager (ADR-0007). Empty falls back to Application
+	// Default Credentials (the local `gcloud auth application-default login`).
+	CredentialsJSON string
+	Model           string
+	Timeout         time.Duration
 }
 
 // Client wraps a genai client bound to a single model and implements
@@ -43,18 +55,38 @@ const defaultGenerateTimeout = 90 * time.Second
 // New so the backend-selection logic is unit-testable without a live client.
 func buildClientConfig(opts Options) (*genai.ClientConfig, error) {
 	if opts.UseVertex {
+		if strings.TrimSpace(opts.CredentialsJSON) == "" && opts.APIKey != "" {
+			return &genai.ClientConfig{
+				Backend: genai.BackendVertexAI,
+				APIKey:  opts.APIKey,
+			}, nil
+		}
 		if opts.Project == "" {
-			return nil, fmt.Errorf("llm: vertex backend requires GOOGLE_CLOUD_PROJECT")
+			return nil, fmt.Errorf("llm: vertex backend requires GOOGLE_CLOUD_PROJECT or GOOGLE_API_KEY")
 		}
 		location := opts.Location
 		if location == "" {
 			location = "global"
 		}
-		return &genai.ClientConfig{
+		cfg := &genai.ClientConfig{
 			Backend:  genai.BackendVertexAI,
 			Project:  opts.Project,
 			Location: location,
-		}, nil
+		}
+		// When the service-account key is supplied as JSON content (an ECS
+		// secret env var, ADR-0007) rather than a file, build the credentials
+		// explicitly; otherwise leave them nil so the SDK uses ADC.
+		if strings.TrimSpace(opts.CredentialsJSON) != "" {
+			creds, err := credentials.DetectDefault(&credentials.DetectOptions{
+				CredentialsJSON: []byte(opts.CredentialsJSON),
+				Scopes:          []string{vertexScope},
+			})
+			if err != nil {
+				return nil, fmt.Errorf("llm: failed to parse vertex credentials JSON: %w", err)
+			}
+			cfg.Credentials = creds
+		}
+		return cfg, nil
 	}
 	if opts.APIKey == "" {
 		return nil, fmt.Errorf("llm: gemini developer backend requires GOOGLE_API_KEY")
@@ -66,8 +98,8 @@ func buildClientConfig(opts Options) (*genai.ClientConfig, error) {
 }
 
 // New initializes a Gemini client for the given options. The Vertex backend
-// authenticates via Application Default Credentials (run
-// `gcloud auth application-default login`).
+// authenticates through an express-mode API key when APIKey is set, explicit
+// JSON credentials when CredentialsJSON is set, or ADC otherwise.
 func New(ctx context.Context, opts Options) (*Client, error) {
 	if opts.Model == "" {
 		return nil, fmt.Errorf("llm: model name is required")

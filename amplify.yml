@@ -1,0 +1,25 @@
+# AWS Amplify build spec for the frontend (ADR-0007).
+# Amplify checks out the whole repo, so appRoot: frontend still lets the build
+# import the design system at ../../design.
+#
+# Set VITE_API_BASE_URL in the Amplify console (App settings → Environment
+# variables) to the deployed backend URL, e.g. http://<alb-or-ecs-host>:8080.
+# Vite inlines it at build time, so a change requires a redeploy.
+version: 1
+applications:
+  - appRoot: frontend
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - npm ci
+        build:
+          commands:
+            - npm run build
+      artifacts:
+        baseDirectory: dist
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*

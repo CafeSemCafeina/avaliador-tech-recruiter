@@ -58,3 +58,10 @@ Negative:
 
 The backend must expose `/health`, run in Docker locally, and be deployable from an image. The frontend must use `VITE_API_BASE_URL` to call the backend. If ECS blocks progress, the fallback must be documented.
 
+## Implementation
+
+Dockerization landed in `backend/Dockerfile` (multi-stage, static binary on `distroless/static`, ~28 MB) and `frontend/Dockerfile` (Vite build → nginx; built from the repo root so it can reach `design/`). `docker-compose.yml` runs both locally for a smoke test, and [`scripts/push-backend.ps1`](../../scripts/push-backend.ps1) builds and pushes the backend image to ECR. The Amplify build spec is [`amplify.yml`](../../amplify.yml). The full runbook is [docs/DEPLOY.md](../DEPLOY.md).
+
+Compute deviation: the backend was deployed on **AWS App Runner** (from the ECR image), not ECS Express Mode. App Runner serves the same intent — a managed container with a public HTTPS URL and no VM to administer — with far less setup (no VPC/cluster/task-def/ALB wiring) and a stable URL. ECS Express/Fargate remain documented alternatives in [docs/DEPLOY.md](../DEPLOY.md). The frontend went out via an Amplify **manual deploy** (CLI zip upload) rather than a GitHub connection, so it needed no console OAuth; the git-connected path stays available via `amplify.yml`.
+
+Vertex-from-AWS detail: the deployed App Runner service uses Vertex express mode with a Google Cloud API key bound to a dedicated service account, restricted to `aiplatform.googleapis.com`, and stored in AWS Secrets Manager. The `LLMClient` ([ADR-0011](0011-use-gemini-and-spike-google-adk.md)) passes `GOOGLE_API_KEY` to the Vertex backend when present. ADC remains the local default, and `GOOGLE_CREDENTIALS_JSON` remains available as a compatibility path. A production workload should prefer Workload Identity Federation over this long-lived demo secret.

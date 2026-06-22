@@ -1,0 +1,21 @@
+# Applies to builds that use the repo root as context (the frontend image).
+# The backend image uses backend/ as its context and backend/.dockerignore.
+.git
+.github
+.worktrees
+.agents
+.codex
+.claude
+
+# Not needed to build the frontend bundle.
+backend
+specs
+orchestration
+
+# Local installs / build output / secrets.
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+**/*.log
+*.zip

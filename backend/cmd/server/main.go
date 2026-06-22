@@ -37,6 +37,9 @@ func main() {
 			Project:   os.Getenv("GOOGLE_CLOUD_PROJECT"),
 			Location:  os.Getenv("GOOGLE_CLOUD_LOCATION"),
 			Timeout:   time.Duration(getenvInt("GEMINI_CALL_TIMEOUT_MS", 90000)) * time.Millisecond,
+			// Vertex from a container where the key arrives as a secret env var
+			// (ADR-0007) instead of a file. Empty falls back to ADC locally.
+			CredentialsJSON: os.Getenv("GOOGLE_CREDENTIALS_JSON"),
 		}
 
 		backend := "Gemini Developer API (GOOGLE_API_KEY)"

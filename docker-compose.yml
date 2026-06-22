@@ -1,0 +1,43 @@
+# Local full-stack smoke test of the production images.
+#   docker compose up --build
+# Frontend → http://localhost:3000   Backend → http://localhost:8080/health
+#
+# Defaults to ANALYSIS_MODE=mock (the protected floor) so it runs with no
+# external credentials. To exercise gemini/Vertex locally, set the variables in
+# backend/.env (see backend/.env.example) and mount your service-account key —
+# uncomment the `volumes` and GOOGLE_APPLICATION_CREDENTIALS lines below.
+
+services:
+  backend:
+    build:
+      context: ./backend
+    image: avaliador-backend:local
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      ANALYSIS_MODE: "${ANALYSIS_MODE:-mock}"
+      # --- gemini/Vertex (used only when ANALYSIS_MODE=gemini) ---
+      GOOGLE_GENAI_USE_VERTEXAI: "${GOOGLE_GENAI_USE_VERTEXAI:-true}"
+      GOOGLE_CLOUD_PROJECT: "${GOOGLE_CLOUD_PROJECT:-}"
+      GOOGLE_CLOUD_LOCATION: "${GOOGLE_CLOUD_LOCATION:-global}"
+      GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
+      # Vertex key as JSON content (mirrors the ECS secret). For local Vertex you
+      # can instead leave this empty and mount your ADC file (see volumes below).
+      GOOGLE_CREDENTIALS_JSON: "${GOOGLE_CREDENTIALS_JSON:-}"
+      # GOOGLE_APPLICATION_CREDENTIALS: "/secrets/gcp-sa.json"
+    # volumes:
+    #   - ./backend/gcp-sa.json:/secrets/gcp-sa.json:ro
+
+  frontend:
+    build:
+      # Root context so the build can reach the design system at ../../design.
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: "${VITE_API_BASE_URL:-http://localhost:8080}"
+    image: avaliador-frontend:local
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend

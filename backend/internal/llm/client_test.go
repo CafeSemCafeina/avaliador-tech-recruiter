@@ -34,6 +34,36 @@ func TestBuildClientConfigVertexRequiresProject(t *testing.T) {
 	}
 }
 
+func TestBuildClientConfigVertexExpressModeUsesAPIKey(t *testing.T) {
+	cfg, err := buildClientConfig(Options{UseVertex: true, APIKey: "vertex-key"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Backend != genai.BackendVertexAI || cfg.APIKey != "vertex-key" {
+		t.Errorf("unexpected vertex express mode config: %+v", cfg)
+	}
+	if cfg.Project != "" || cfg.Location != "" || cfg.Credentials != nil {
+		t.Errorf("vertex express mode must not mix API key with project, location, or credentials: %+v", cfg)
+	}
+}
+
+func TestBuildClientConfigVertexNoCredentialsJSONUsesADC(t *testing.T) {
+	cfg, err := buildClientConfig(Options{UseVertex: true, Project: "my-proj"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Credentials != nil {
+		t.Error("expected nil credentials (ADC fallback) when no CredentialsJSON is set")
+	}
+}
+
+func TestBuildClientConfigVertexInvalidCredentialsJSON(t *testing.T) {
+	_, err := buildClientConfig(Options{UseVertex: true, Project: "my-proj", CredentialsJSON: "{not valid json"})
+	if err == nil {
+		t.Error("expected error when CredentialsJSON is not valid JSON")
+	}
+}
+
 func TestBuildClientConfigDeveloperAPI(t *testing.T) {
 	cfg, err := buildClientConfig(Options{APIKey: "k"})
 	if err != nil {
