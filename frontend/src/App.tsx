@@ -2,6 +2,7 @@ import { useReducer, useRef } from 'react';
 import { initialState, reducer } from './state';
 import { CandidateScreen, JobScreen, ProgressScreen, ReportScreen } from './screens';
 import { createAnalysis, fetchReport, streamEvents, ValidationError } from './api';
+import { AppShell } from './components/core/AppShell';
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -40,7 +41,7 @@ export default function App() {
   };
 
   return (
-    <main className="container">
+    <AppShell current={state.step}>
       {state.step === 'job' && (
         <JobScreen state={state} dispatch={dispatch} onContinue={() => dispatch({ type: 'goToCandidate' })} />
       )}
@@ -51,6 +52,6 @@ export default function App() {
       {state.step === 'report' && state.report && state.analysisId && (
         <ReportScreen report={state.report} analysisId={state.analysisId} onReset={reset} />
       )}
-    </main>
+    </AppShell>
   );
 }

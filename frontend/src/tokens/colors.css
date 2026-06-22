@@ -1,0 +1,124 @@
+/* ============================================================
+   Technical Maturity Analyzer — Color tokens
+   Calm, evidence-first, operational SaaS palette.
+   Cool slate neutrals, one calm blue accent, muted status hues.
+   ============================================================ */
+
+:root {
+  /* ---------- Neutrals (cool slate) ---------- */
+  --neutral-0:   #ffffff;
+  --neutral-25:  #fbfcfd;
+  --neutral-50:  #f6f8fa;
+  --neutral-100: #eef1f4;
+  --neutral-150: #e7ebf0;
+  --neutral-200: #e2e6ec;
+  --neutral-300: #cdd3dc;
+  --neutral-400: #a6afbd;
+  --neutral-500: #7b8595;
+  --neutral-600: #5a6473;
+  --neutral-700: #3e4756;
+  --neutral-800: #28303d;
+  --neutral-900: #18202f;
+
+  /* ---------- Accent (calm blue) ---------- */
+  --blue-50:  #eef4fc;
+  --blue-100: #d8e6f8;
+  --blue-200: #b0cbf0;
+  --blue-300: #7fa9e2;
+  --blue-500: #2f6bbf;
+  --blue-600: #2557a0;
+  --blue-700: #1e4683;
+
+  /* ---------- Status: confirmed / strong (muted green) ---------- */
+  --green-50:  #e9f5ef;
+  --green-100: #cfeadf;
+  --green-200: #a8d6c2;
+  --green-500: #2e7d5b;
+  --green-600: #266a4d;
+  --green-700: #1f5640;
+
+  /* ---------- Status: needs validation (muted amber) ---------- */
+  --amber-50:  #fbf2e3;
+  --amber-100: #f5e3c2;
+  --amber-200: #ebcd92;
+  --amber-500: #b6792b;
+  --amber-600: #9a6422;
+  --amber-700: #7e5119;
+
+  /* ---------- Status: gap / weak (muted clay — never alarming) ---------- */
+  --clay-50:  #f8eceb;
+  --clay-100: #f0d7d3;
+  --clay-200: #e2b3ac;
+  --clay-500: #b5524b;
+  --clay-600: #9c443e;
+  --clay-700: #813833;
+
+  /* ---------- Status: uncertain (slate-blue, neutral) ---------- */
+  --slate-50:  #eef1f5;
+  --slate-100: #dfe4ec;
+  --slate-200: #c4cdda;
+  --slate-500: #64748b;
+  --slate-600: #51607a;
+
+  /* ============================================================
+     Semantic aliases — prefer these in components
+     ============================================================ */
+
+  /* Surfaces & background */
+  --bg-app:          var(--neutral-50);
+  --surface-card:    var(--neutral-0);
+  --surface-raised:  var(--neutral-0);
+  --surface-sunken:  var(--neutral-100);
+  --surface-hover:   var(--neutral-100);
+  --surface-inverse: var(--neutral-900);
+
+  /* Borders */
+  --border-subtle:  var(--neutral-200);
+  --border-default: var(--neutral-300);
+  --border-strong:  var(--neutral-400);
+
+  /* Text */
+  --text-primary:   var(--neutral-900);
+  --text-secondary: var(--neutral-600);
+  --text-muted:     var(--neutral-500);
+  --text-disabled:  var(--neutral-400);
+  --text-inverse:   var(--neutral-0);
+  --text-link:      var(--blue-600);
+
+  /* Accent / interactive */
+  --accent:         var(--blue-500);
+  --accent-hover:   var(--blue-600);
+  --accent-active:  var(--blue-700);
+  --accent-subtle:  var(--blue-50);
+  --focus-ring:     var(--blue-500);
+
+  /* Status — confirmed (strong with evidence) */
+  --status-confirmed-fg:     var(--green-700);
+  --status-confirmed-bg:     var(--green-50);
+  --status-confirmed-border: var(--green-200);
+  --status-confirmed-solid:  var(--green-500);
+
+  /* Status — validate (needs validation) */
+  --status-validate-fg:     var(--amber-700);
+  --status-validate-bg:     var(--amber-50);
+  --status-validate-border: var(--amber-200);
+  --status-validate-solid:  var(--amber-500);
+
+  /* Status — gap (weak with evidence) */
+  --status-gap-fg:     var(--clay-700);
+  --status-gap-bg:     var(--clay-50);
+  --status-gap-border: var(--clay-200);
+  --status-gap-solid:  var(--clay-500);
+
+  /* Status — uncertain (weak but needs validation) */
+  --status-uncertain-fg:     var(--slate-600);
+  --status-uncertain-bg:     var(--slate-50);
+  --status-uncertain-border: var(--slate-200);
+  --status-uncertain-solid:  var(--slate-500);
+
+  /* Status — info / neutral process */
+  --status-info-fg:     var(--blue-700);
+  --status-info-bg:     var(--blue-50);
+  --status-info-border: var(--blue-200);
+  --status-info-solid:  var(--blue-500);
+}
