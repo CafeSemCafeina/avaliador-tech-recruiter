@@ -9,6 +9,7 @@ package llm
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"google.golang.org/genai"
@@ -23,14 +24,19 @@ type Options struct {
 	Project   string // Vertex backend (GOOGLE_CLOUD_PROJECT)
 	Location  string // Vertex backend (GOOGLE_CLOUD_LOCATION); defaults to "global"
 	Model     string
+	Timeout   time.Duration
 }
 
 // Client wraps a genai client bound to a single model and implements
 // pipeline.LLMClient.
 type Client struct {
-	client *genai.Client
-	model  string
+	client  *genai.Client
+	model   string
+	timeout time.Duration
 }
+
+const maxGenerateAttempts = 4
+const defaultGenerateTimeout = 90 * time.Second
 
 // buildClientConfig resolves the genai client config for the selected backend,
 // returning a clear error when required fields are missing. Kept separate from
@@ -74,21 +80,19 @@ func New(ctx context.Context, opts Options) (*Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("llm: failed to create genai client: %w", err)
 	}
-	return &Client{client: cli, model: opts.Model}, nil
+	return &Client{client: cli, model: opts.Model, timeout: resolveGenerateTimeout(opts.Timeout)}, nil
 }
 
 // Generate sends the prompt to Gemini with timeouts and retries, returning the text content.
 func (c *Client) Generate(ctx context.Context, prompt string) (string, error) {
 	var lastErr error
 
-	// Retry loop: up to 3 attempts
-	for i := 0; i < 3; i++ {
+	for i := 0; i < maxGenerateAttempts; i++ {
 		if err := ctx.Err(); err != nil {
 			return "", err
 		}
 
-		// Configure 30 second timeout per call
-		callCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		callCtx, cancel := context.WithTimeout(ctx, c.timeout)
 		resp, err := c.client.Models.GenerateContent(
 			callCtx,
 			c.model,
@@ -105,14 +109,44 @@ func (c *Client) Generate(ctx context.Context, prompt string) (string, error) {
 		}
 
 		lastErr = err
+		if i == maxGenerateAttempts-1 {
+			break
+		}
 
-		// Wait before retrying, respecting parent context cancellation
 		select {
 		case <-ctx.Done():
 			return "", ctx.Err()
-		case <-time.After(time.Duration(i+1) * time.Second):
+		case <-time.After(retryDelay(err, i)):
 		}
 	}
 
 	return "", fmt.Errorf("llm: generate content failed after retries: %w", lastErr)
+}
+
+func resolveGenerateTimeout(timeout time.Duration) time.Duration {
+	if timeout > 0 {
+		return timeout
+	}
+	return defaultGenerateTimeout
+}
+
+func retryDelay(err error, attempt int) time.Duration {
+	if isResourceExhausted(err) {
+		delays := []time.Duration{10 * time.Second, 30 * time.Second, 60 * time.Second}
+		if attempt < len(delays) {
+			return delays[attempt]
+		}
+		return delays[len(delays)-1]
+	}
+	return time.Duration(attempt+1) * time.Second
+}
+
+func isResourceExhausted(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "resource_exhausted") ||
+		strings.Contains(msg, "resource exhausted") ||
+		strings.Contains(msg, "error 429")
 }

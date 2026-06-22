@@ -44,6 +44,7 @@ type GeminiPipeline struct {
 	githubFetch      GitHubEvidenceFetcher
 	portfolioFetch   PortfolioEvidenceFetcher
 	portfolioOptions ingestportfolio.Options
+	matrixPause      time.Duration
 }
 
 // GitHubEvidenceFetcher fetches bounded public GitHub evidence for the Gemini pipeline.
@@ -58,6 +59,7 @@ type GeminiIngestionOptions struct {
 	GitHubFetch      GitHubEvidenceFetcher
 	PortfolioFetch   PortfolioEvidenceFetcher
 	PortfolioOptions ingestportfolio.Options
+	MatrixPause      time.Duration
 }
 
 // NewGeminiPipeline returns a new GeminiPipeline.
@@ -83,6 +85,7 @@ func NewGeminiPipelineWithIngestion(fastClient, strongClient LLMClient, opts Gem
 		githubFetch:      githubFetch,
 		portfolioFetch:   portfolioFetch,
 		portfolioOptions: opts.PortfolioOptions,
+		matrixPause:      opts.MatrixPause,
 	}
 }
 
@@ -392,6 +395,14 @@ func (gp *GeminiPipeline) Run(ctx context.Context, analysisID string, job contra
 
 	// 6. evidence_matrix
 	if err := runStage(6, "evidence_matrix", "Building evidence matrix", func() error {
+		if gp.matrixPause > 0 {
+			select {
+			case <-ctx.Done():
+				matrix = fallbackQuadrantClassifier(job, cand)
+				return ctx.Err()
+			case <-time.After(gp.matrixPause):
+			}
+		}
 		checkedSkillsJSON, _ := json.Marshal(checkedSkills)
 		vars := map[string]interface{}{
 			"CheckedSkills":       string(checkedSkillsJSON),
