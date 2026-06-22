@@ -1,0 +1,21 @@
+[
+  {
+    "id": "eval_fixture_001",
+    "description": "Full-Stack Engineer (Go/React) evaluating a Senior candidate",
+    "job_input": {
+      "description": "We are looking for a Senior Full-Stack Engineer to lead the development of our agentic AI pipeline and web dashboard. You will work extensively with Go (Chi framework) on the backend and React (TypeScript, Vite) on the frontend. The ideal candidate has experience building distributed systems, working with SSE (Server-Sent Events), and managing cloud infrastructure on AWS.",
+      "seniority": "Senior",
+      "yearsExperience": 5,
+      "stackTags": ["Go", "React", "TypeScript", "AWS", "Docker", "Prompt Engineering"],
+      "primaryStacks": ["Go", "React", "TypeScript"],
+      "notes": "Looking for someone who can own the architecture end-to-end. Focus heavily on backend maturity and system design."
+    },
+    "candidate_evidence": {
+      "resumeText": "Senior Full-Stack Engineer with 6+ years of experience building scalable web applications. \n\nEXPERIENCE\nLead Engineer @ TechNova (2020 - Present)\n- Architected and deployed microservices using Go and Docker on AWS App Runner.\n- Developed responsive and accessible frontends using React, TypeScript, and Vite.\n- Implemented real-time data streaming features utilizing Server-Sent Events (SSE).\n\nSoftware Engineer @ WebCorp (2018 - 2020)\n- Built RESTful APIs using Node.js and Express.\n- Migrated legacy frontend from Vue to React, improving performance by 40%.\n\nEDUCATION\nB.Sc. Computer Science",
+      "linkedinText": "Software Engineer passionate about Agentic AI, Go, and React. Experienced in building full-stack applications with modern web technologies. Focuses on clean code, test-driven development, and scalable cloud deployments.",
+      "githubUrl": "https://github.com/CafeSemCafeina",
+      "portfolioUrl": "https://cafesemcafeina.dev",
+      "notes": "Candidate seems to have exactly the stack we need. Let's see if the evidence matrix catches their experience with AI or if it's just a buzzword on their LinkedIn."
+    }
+  }
+]
