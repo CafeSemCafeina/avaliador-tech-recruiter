@@ -1,5 +1,10 @@
 # Contributing
 
+> [!WARNING]
+> **Not Accepting Contributions**
+> 
+> This repository is a personal portfolio project and is **not accepting external contributions at this time**. The workflow documented below is intended solely for the author and autonomous AI agents operating within the repository.
+
 This repo is built mostly by AI agents under a precise git flow. The same rules
 apply to humans. Agent-specific behavior is in [AGENTS.md](AGENTS.md) (and
 [CLAUDE.md](CLAUDE.md) for Claude Code); this file is the canonical workflow.
